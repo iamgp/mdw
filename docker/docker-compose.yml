@@ -1,0 +1,128 @@
+version: "3.8"
+
+services:
+  # Main application service
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000" # API
+      - "3000:3000" # Web interface
+      - "4000:4000" # Additional services
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=warehouse
+      - POSTGRES_PASSWORD=warehouse
+      - POSTGRES_DB=warehouse
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MINIO_HOST=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - DUCKDB_HOST=duckdb
+      - DUCKDB_PORT=3457
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      duckdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mdw_network
+
+  # PostgreSQL for relational data storage
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=warehouse
+      - POSTGRES_PASSWORD=warehouse
+      - POSTGRES_DB=warehouse
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U warehouse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mdw_network
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mdw_network
+
+  # MinIO for object storage
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Console
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - mdw_network
+
+  # DuckDB service (using Python container with DuckDB)
+  duckdb:
+    build:
+      context: .
+      dockerfile: Dockerfile.duckdb
+    ports:
+      - "3457:3457"
+    volumes:
+      - duckdb_data:/data
+    environment:
+      - DUCKDB_DATA_DIR=/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3457/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mdw_network
+
+networks:
+  mdw_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  duckdb_data:

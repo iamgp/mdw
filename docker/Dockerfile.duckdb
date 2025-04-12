@@ -1,0 +1,34 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy only the dependency files first
+COPY pyproject.toml .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir duckdb fastapi uvicorn loguru
+
+# Create data directory
+RUN mkdir -p /data
+
+# Copy server file
+COPY docker/duckdb_server.py /app/duckdb_server.py
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV DUCKDB_DATA_DIR=/data
+
+# Expose port
+EXPOSE 3458
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3458/health || exit 1
+
+# Command to run the server
+CMD ["python", "duckdb_server.py"]

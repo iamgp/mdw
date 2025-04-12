@@ -1,0 +1,115 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=mdw_user
+      - POSTGRES_PASSWORD=mdw_password
+      - POSTGRES_DB=mdw
+      - DUCKDB_HOST=duckdb
+      - DUCKDB_PORT=3458
+      - MINIO_HOST=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minio_admin
+      - MINIO_SECRET_KEY=minio_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+      duckdb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ingestion
+    volumes:
+      - ./src:/app/src
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=mdw_user
+      - POSTGRES_PASSWORD=mdw_password
+      - POSTGRES_DB=mdw
+      - MINIO_HOST=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minio_admin
+      - MINIO_SECRET_KEY=minio_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  duckdb:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.duckdb
+    ports:
+      - "3458:3458"
+    volumes:
+      - duckdb_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3458/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mdw_user
+      POSTGRES_PASSWORD: mdw_password
+      POSTGRES_DB: mdw
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mdw_user -d mdw"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_password
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Console
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  duckdb_data:
+  postgres_data:
+  minio_data:
+
+networks:
+  default:
+    name: mdw_network
