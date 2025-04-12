@@ -10,3 +10,9 @@ app = FastAPI(
 @app.get("/")
 async def root():
     return {"message": "Data Warehouse API is running"}
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Docker healthcheck."""
+    return {"status": "healthy"}
