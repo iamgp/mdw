@@ -44,27 +44,32 @@ envs.default.dependencies = [
 ]
 
 [tool.ruff]
-line-length = 120
+line-length = 88
 target-version = "py311"
+
+[tool.ruff.lint]
 select = [
-    "A",   # flake8-builtins
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "E",   # pycodestyle errors
-    "F",   # pyflakes
-    "I",   # isort
-    "N",   # pep8-naming
-    "PT",  # pytest
-    "RUF", # ruff-specific rules
-    "SIM", # flake8-simplify
-    "UP",  # pyupgrade
-    "W",   # pycodestyle warnings
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "UP", # pyupgrade
+    "PT", # pytest style
 ]
+ignore = ["PT003"] # Ignore fixture scope warning
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.basedpyright]
 typeCheckingMode = "strict"
 pythonVersion = "3.11"
-reportMissingTypeStubs = true
+reportMissingImports = true
 reportUnknownMemberType = true
 reportUnknownVariableType = true
 reportUnknownArgumentType = true
@@ -72,7 +77,15 @@ reportMissingTypeArgument = true
 reportUntypedFunctionDecorator = true
 reportUnknownLambdaType = true
 reportMissingParameterType = true
-reportMissingReturnType = true
+reportPrivateImportUsage = true
+useLibraryCodeForTypes = true
+strictListInference = true
+strictDictionaryInference = true
+strictSetInference = true
+strictParameterNoneValue = true
+enableTypeIgnoreComments = true
+venvPath = "."
+pythonPlatform = "Darwin"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
