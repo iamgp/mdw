@@ -1,0 +1,81 @@
+[project]
+name = "data_warehouse"
+version = "0.1.0"
+description = "Modern Data Warehouse using DuckDB, PostgreSQL, DBT, and Dagster"
+authors = [{ name = "Gareth Price", email = "gareth@example.com" }]
+dependencies = [
+    "click>=8.1.7",
+    "loguru>=0.7.2",
+    "duckdb>=0.9.2",
+    "psycopg[binary]>=3.1.18",
+    "dlt>=0.4.5",
+    "dbt-core>=1.7.8",
+    "dbt-postgres>=1.7.8",
+    "dbt-duckdb>=1.7.8",
+    "dagster>=1.6.7",
+    "dagster-graphql>=1.6.7",
+    "dagster-webserver>=1.6.7",
+    "owlready2>=0.45",
+    "strawberry-graphql>=0.220.0",
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.1",
+    "pydantic>=2.6.3",
+    "pydantic-settings>=2.2.1",
+    "python-dotenv>=1.0.1",
+    "rich>=13.7.0",
+]
+requires-python = ">=3.11"
+
+[build-system]
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
+[tool.hatch]
+version.source = "vcs"
+envs.default.dependencies = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-mock",
+    "pytest-xdist",
+    "pytest-benchmark",
+    "ruff",
+    "basedpyright",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+select = [
+    "A",   # flake8-builtins
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "PT",  # pytest
+    "RUF", # ruff-specific rules
+    "SIM", # flake8-simplify
+    "UP",  # pyupgrade
+    "W",   # pycodestyle warnings
+]
+
+[tool.basedpyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.11"
+reportMissingTypeStubs = true
+reportUnknownMemberType = true
+reportUnknownVariableType = true
+reportUnknownArgumentType = true
+reportMissingTypeArgument = true
+reportUntypedFunctionDecorator = true
+reportUnknownLambdaType = true
+reportMissingParameterType = true
+reportMissingReturnType = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra -q --cov=data_warehouse --cov-report=xml --cov-report=term-missing --cov-fail-under=90"
+asyncio_mode = "auto"
