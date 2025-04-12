@@ -26,7 +26,7 @@ def project_root() -> Path:
     return Path(__file__).parent.parent
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_data() -> dict[str, Any]:
     """Provide test data for the test cases.
 
@@ -89,7 +89,7 @@ def mock_db_connection(
     connection["connected"] = False
 
 
-@pytest.fixture()
+@pytest.fixture
 def _temp_env(
     request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
 ) -> Generator[None, None, None]:
