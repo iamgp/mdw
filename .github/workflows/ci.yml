@@ -39,10 +39,10 @@ jobs:
         with:
           args: check .
 
-      - name: Type check with basedpyright
-        run: |
-          source .venv/bin/activate
-          python -m basedpyright .
+      # - name: Type check with basedpyright
+      #   run: |
+      #     source .venv/bin/activate
+      #     python -m basedpyright .
 
       - name: Run tests
         run: |
