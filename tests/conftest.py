@@ -6,8 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from _pytest.fixtures import FixtureRequest
-from _pytest.monkeypatch import MonkeyPatch
 
 
 @pytest.fixture(scope="session")
@@ -28,54 +26,87 @@ def project_root() -> Path:
     return Path(__file__).parent.parent
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_data() -> dict[str, Any]:
     """Provide test data for the test cases.
 
     Returns:
-        dict: Test data dictionary
+        Dict[str, Any]: Test data dictionary containing key-value pairs for testing
     """
     return {"key": "value"}
 
 
-@pytest.fixture
-def mock_config() -> dict[str, Any]:
-    """Provide mock configuration for testing.
+@pytest.fixture(scope="function")
+def mock_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mock environment variables for testing.
 
-    Returns:
-        dict: Mock configuration dictionary
+    Args:
+        monkeypatch: Pytest fixture for modifying the test environment
     """
-    return {
-        "database": "test_db",
-        "host": "localhost",
-        "port": 5432,
-    }
+    monkeypatch.setenv("POSTGRES_USER", "test_user")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "test_password")
+    monkeypatch.setenv("POSTGRES_HOST", "localhost")
+    monkeypatch.setenv("POSTGRES_PORT", "5432")
+    monkeypatch.setenv("POSTGRES_DB", "test_db")
 
 
-@pytest.fixture
-def mock_env() -> dict[str, str]:
-    """Provide mock environment variables.
-
-    Returns:
-        dict: Mock environment variables
-    """
-    return {
-        "DB_HOST": "localhost",
-        "DB_PORT": "5432",
-        "DB_NAME": "test_db",
-    }
-
-
-@pytest.fixture
-def _temp_env(
-    request: FixtureRequest, monkeypatch: MonkeyPatch
-) -> Generator[None, None, None]:
-    """Set up temporary environment variables for tests.
+@pytest.fixture(scope="function")
+def mock_config(request: pytest.FixtureRequest) -> dict[str, Any]:
+    """Mock configuration for testing.
 
     Args:
         request: Pytest fixture request object
-        monkeypatch: Pytest monkeypatch fixture
+
+    Returns:
+        Dict[str, Any]: Mock configuration dictionary with database connection
+        parameters
     """
+    return {
+        "user": "test_user",
+        "password": "test_password",
+        "host": "localhost",
+        "port": 5432,
+        "database": "test_db",
+    }
+
+
+@pytest.fixture(scope="function")
+def mock_db_connection(
+    request: pytest.FixtureRequest,
+) -> Generator[dict[str, bool], None, None]:
+    """Mock database connection for testing.
+
+    Args:
+        request: Pytest fixture request object
+
+    Yields:
+        Dict[str, bool]: Mock connection object representing a database connection
+    """
+    # Here you would typically set up a test database connection
+    connection = {"connected": True}  # Mock connection object
+    yield connection
+    # Clean up would happen here
+    connection["connected"] = False
+
+
+@pytest.fixture()
+def _temp_env(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Generator[None, None, None]:
+    """Temporarily modify environment variables for the duration of a test.
+
+    This fixture allows setting environment variables using the @pytest.mark.env
+    decorator. Variables are restored to their original values after the test.
+
+    Args:
+        request: Pytest fixture request object used to access test markers
+        monkeypatch: Pytest fixture for modifying the test environment
+
+    Yields:
+        None: This fixture yields None but provides environment variable modification
+    """
+    old_environ = os.environ.copy()
+
     marker = request.node.get_closest_marker("env")
     if marker:
         for key, value in marker.kwargs.items():
