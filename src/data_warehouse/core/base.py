@@ -139,12 +139,15 @@ class Pipeline(Component[ConfigT]):
             # Transform
             transformed_data = extracted_data
             for transformer in self.transformers:
-                self.logger.info(f"Running transformer: {transformer.__class__.__name__}")
-                transformed_data = [await transformer.transform(data) for data in transformed_data]
+                transformer_name = transformer.__class__.__name__
+                self.logger.info(f"Running transformer: {transformer_name}")
+                transformed_data = [
+                    await transformer.transform(data) for data in transformed_data
+                ]
                 metrics["transformers"].append(
                     {
-                        "name": transformer.__class__.__name__,
-                        "status": "success",
+                        "name": transformer_name,
+                        "records_processed": len(transformed_data),
                     }
                 )
 

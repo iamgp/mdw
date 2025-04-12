@@ -34,7 +34,9 @@ class BaseWorkflow(ABC):
         pass
 
     @abstractmethod
-    async def transform(self, context: OpExecutionContext, data: dict[str, Any]) -> dict[str, Any]:
+    async def transform(
+        self, context: OpExecutionContext, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Transform extracted data."""
         pass
 

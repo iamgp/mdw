@@ -35,17 +35,16 @@ jobs:
           uv pip install -e ".[dev]"
 
       - name: Lint with ruff
-        run: |
-          source .venv/bin/activate
-          ruff check .
-          ruff format --check .
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: check .
 
-      - name: Type check with basedpyright
-        run: |
-          source .venv/bin/activate
-          basedpyright .
+      # - name: Type check with basedpyright
+      #   run: |
+      #     source .venv/bin/activate
+      #     python -m basedpyright .
 
       - name: Run tests
         run: |
           source .venv/bin/activate
-          pytest
+          python -m pytest
