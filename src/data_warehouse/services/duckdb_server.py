@@ -41,7 +41,7 @@ async def execute_query(request: QueryRequest) -> list[dict[str, Any]]:
 
     except Exception as e:
         logger.error(f"Query execution error: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/health")
@@ -52,7 +52,7 @@ async def health_check() -> dict[str, str]:
         return {"status": "healthy"}
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
-        raise HTTPException(status_code=503, detail="Database unavailable")
+        raise HTTPException(status_code=503, detail="Database unavailable") from e
 
 
 if __name__ == "__main__":
