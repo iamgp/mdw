@@ -3,8 +3,9 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
-from data_warehouse.utils.logger import logger
 from pydantic import BaseModel
+
+from data_warehouse.utils.logger import logger
 
 # Type variables for generic type hints
 ConfigT = TypeVar("ConfigT", bound=BaseModel)

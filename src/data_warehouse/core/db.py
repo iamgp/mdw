@@ -6,10 +6,11 @@ from pathlib import Path
 
 import duckdb
 import psycopg
+from psycopg import AsyncConnection, AsyncCursor
+
 from data_warehouse.config.settings import settings
 from data_warehouse.core.exceptions import DatabaseError
 from data_warehouse.utils.logger import logger
-from psycopg import AsyncConnection, AsyncCursor
 
 
 @contextlib.asynccontextmanager

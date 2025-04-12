@@ -1,6 +1,5 @@
 """Test fixtures and configuration."""
 
-import os
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
@@ -87,32 +86,3 @@ def mock_db_connection(
     yield connection
     # Clean up would happen here
     connection["connected"] = False
-
-
-@pytest.fixture
-def _temp_env(
-    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
-) -> Generator[None, None, None]:
-    """Temporarily modify environment variables for the duration of a test.
-
-    This fixture allows setting environment variables using the @pytest.mark.env
-    decorator. Variables are restored to their original values after the test.
-
-    Args:
-        request: Pytest fixture request object used to access test markers
-        monkeypatch: Pytest fixture for modifying the test environment
-
-    Yields:
-        None: This fixture yields None but provides environment variable modification
-    """
-    old_environ = os.environ.copy()
-
-    marker = request.node.get_closest_marker("env")
-    if marker:
-        for key, value in marker.kwargs.items():
-            monkeypatch.setenv(key, str(value))
-
-    yield None
-
-    os.environ.clear()
-    os.environ.update(old_environ)
