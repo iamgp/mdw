@@ -25,6 +25,22 @@ def setup_logger() -> None:
     logger.remove()
     logger.configure(**config)
 
+    # Add file logging in non-development environments
+    if settings.ENVIRONMENT != "development":
+        log_file = settings.PROJECT_ROOT / "logs" / "data_warehouse.log"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+
+        logger.add(
+            str(log_file),
+            rotation="10 MB",
+            retention="1 week",
+            compression="zip",
+            level=settings.LOG_LEVEL,
+            format=settings.LOG_FORMAT,
+        )
+
+    logger.debug("Logger configured successfully")
+
 
 # Configure logger on module import
 setup_logger()
