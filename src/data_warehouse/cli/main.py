@@ -1,7 +1,6 @@
 """Main CLI entry point for the data warehouse."""
 
 import click
-from loguru import logger
 
 from data_warehouse import __version__
 from data_warehouse.cli.deploy import deploy
@@ -10,12 +9,17 @@ from data_warehouse.cli.monitor import monitor
 from data_warehouse.cli.storage import storage
 from data_warehouse.cli.transforms import transforms
 from data_warehouse.config.settings import settings
-from data_warehouse.utils.logger import setup_logger
+from data_warehouse.utils.error_handler import handle_exceptions
+from data_warehouse.utils.logger import get_command_logger, setup_logger
+
+# Get a logger for this module
+log = get_command_logger(__name__)
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(version=__version__, prog_name="data-warehouse")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging output.")
+@handle_exceptions()
 def cli(verbose: bool):
     """Data Warehouse CLI - Management and operations tool.
 
@@ -23,8 +27,8 @@ def cli(verbose: bool):
     including storage setup, data ingestion, transformations, and monitoring.
     """
     # Initialize logger with appropriate verbosity
-    setup_logger()  # Existing function doesn't take parameters, will enhance in subtask 4.3
-    logger.debug(f"Data Warehouse CLI started in {settings.ENVIRONMENT} environment")
+    setup_logger(verbose)
+    log.debug(f"Data Warehouse CLI started in {settings.ENVIRONMENT} environment")
 
 
 # Add command groups
@@ -37,6 +41,7 @@ cli.add_command(monitor)
 
 # Add top-level commands
 @cli.command("version")
+@handle_exceptions()
 def version():
     """Show the current version of the data warehouse."""
     click.echo(f"Data Warehouse version: {__version__}")
@@ -44,6 +49,7 @@ def version():
 
 
 @cli.command("info")
+@handle_exceptions()
 def info():
     """Display information about the data warehouse configuration."""
     click.echo("Data Warehouse Configuration:")
@@ -56,6 +62,7 @@ def info():
 
 
 @cli.command("doctor")
+@handle_exceptions()
 def doctor():
     """Run diagnostics to check if the data warehouse is configured correctly."""
     click.echo("Running diagnostic checks...")
