@@ -1,18 +1,52 @@
-from fastapi import FastAPI
+"""Main entry point for data warehouse application."""
 
-app = FastAPI(
-    title="Data Warehouse",
-    description="Modern Data Warehouse Platform",
-    version="0.1.0",
-)
+import asyncio
+import sys
 
+from loguru import logger
 
-@app.get("/")
-async def root():
-    return {"message": "Data Warehouse API is running"}
+from data_warehouse.config.settings import settings
+from data_warehouse.core.storage import initialize_storage
+from data_warehouse.utils.logger import setup_logger
 
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint for Docker healthcheck."""
-    return {"status": "healthy"}
+async def startup() -> None:
+    """Initialize and start the data warehouse application.
+
+    Returns:
+        None
+    """
+    # Setup logging configuration
+    setup_logger()
+    logger.info(f"Starting data warehouse in {settings.ENVIRONMENT} environment")
+
+    # Initialize all storage components
+    logger.info("Initializing storage layer...")
+    await initialize_storage()
+
+    # Add additional initialization here as needed
+    # e.g., API server, scheduled jobs, etc.
+
+    logger.info("Data warehouse initialization complete")
+
+
+def main() -> None:
+    """Main entry point for the application."""
+    try:
+        asyncio.run(startup())
+
+        # Keep the application running in production mode
+        if settings.ENVIRONMENT == "production":
+            # In a real app, you'd run the API server here
+            logger.info("Data warehouse running...")
+            # Run forever until interrupted
+            asyncio.run(asyncio.Event().wait())
+    except KeyboardInterrupt:
+        logger.info("Data warehouse shutting down...")
+    except Exception as e:
+        logger.error(f"Failed to start data warehouse: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
