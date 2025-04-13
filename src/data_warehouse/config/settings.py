@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     PROJECT_ROOT: Path = Field(default=Path(__file__).parent.parent.parent.parent)
     DATA_DIR: Path = Field(default=PROJECT_ROOT / "data")
 
+    # Environment setting
+    ENVIRONMENT: Literal["development", "testing", "production"] = Field(
+        default="development"
+    )
+
     # Database settings
     POSTGRES_HOST: str = Field(default="localhost")
     POSTGRES_PORT: int = Field(default=5432)
@@ -23,6 +28,13 @@ class Settings(BaseSettings):
 
     # DuckDB settings
     DUCKDB_PATH: Path = Field(default=DATA_DIR / "warehouse.db")
+
+    # MinIO settings
+    MINIO_HOST: str = Field(default="localhost")
+    MINIO_PORT: int = Field(default=9000)
+    MINIO_ACCESS_KEY: str = Field(default="minioadmin")
+    MINIO_SECRET_KEY: str = Field(default="minioadmin")
+    MINIO_SECURE: bool = Field(default=False)
 
     # DBT settings
     DBT_PROJECT_DIR: Path = Field(default=PROJECT_ROOT / "dbt")
@@ -41,7 +53,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="INFO",
     )
-    log_format: str = Field(
+    LOG_FORMAT: str = Field(
         default=(
             "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
             "<level>{level: <8}</level> | "
