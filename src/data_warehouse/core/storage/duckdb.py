@@ -52,7 +52,7 @@ class DuckDBClient:
 
     def execute_query(
         self, query: str, parameters: dict[str, Any] | None = None
-    ) -> duckdb.DuckDBPyResult:
+    ) -> Any:
         """Execute a SQL query on DuckDB.
 
         Args:
@@ -275,14 +275,14 @@ class DuckDBClient:
 
 
 @contextlib.contextmanager
-def get_duckdb_connection() -> Generator[duckdb.DuckDBPyConnection, None, None]:
+def get_duckdb_connection() -> Generator[Any, None, None]:
     """Get a DuckDB connection context manager.
 
     Yields:
         DuckDB connection
 
     Raises:
-        DatabaseError: If connection fails
+        DatabaseError: If connection creation fails
     """
     client = None
     try:
