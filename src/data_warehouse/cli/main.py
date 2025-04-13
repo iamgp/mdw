@@ -4,7 +4,9 @@ import click
 from loguru import logger
 
 from data_warehouse import __version__
+from data_warehouse.cli.deploy import deploy
 from data_warehouse.cli.ingestion import ingestion
+from data_warehouse.cli.monitor import monitor
 from data_warehouse.cli.storage import storage
 from data_warehouse.cli.transforms import transforms
 from data_warehouse.config.settings import settings
@@ -29,6 +31,8 @@ def cli(verbose: bool):
 cli.add_command(storage)
 cli.add_command(ingestion)
 cli.add_command(transforms)
+cli.add_command(deploy)
+cli.add_command(monitor)
 
 
 # Add top-level commands
