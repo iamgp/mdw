@@ -120,3 +120,6 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-ra -q --cov=data_warehouse --cov-report=xml --cov-report=term-missing --cov-fail-under=90"
 asyncio_mode = "auto"
+
+[project.scripts]
+data-warehouse = "data_warehouse.cli.main:cli"
