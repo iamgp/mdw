@@ -40,6 +40,10 @@ jobs:
           source .venv/bin/activate
           ruff check .
 
+      - name: Install Pyright
+        run: |
+          npm install -g pyright
+
       - name: Run Pyright (type check)
         run: |
           export PATH="/root/.local/bin:$PATH"

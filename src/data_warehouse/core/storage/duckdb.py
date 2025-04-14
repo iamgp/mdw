@@ -24,7 +24,7 @@ class DuckDBClient:
     def __new__(cls):
         """Implement singleton pattern for DuckDB client."""
         if cls._instance is None:
-            cls._instance = super(DuckDBClient, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
@@ -38,7 +38,7 @@ class DuckDBClient:
 
         # Setup the connection
         self.db_path = settings.DUCKDB_PATH
-        self.connection = duckdb.connect(str(self.db_path))
+        self.connection = duckdb.connect(str(self.db_path))  # type: ignore
 
         # Configure settings for optimal analytical performance
         self.connection.execute("PRAGMA threads=8")
@@ -163,7 +163,7 @@ class DuckDBClient:
         try:
             mode = "CREATE OR REPLACE TABLE" if replace else "CREATE TABLE IF NOT EXISTS"
 
-            options = []
+            options: list[str] = []
             if auto_detect:
                 options.append("AUTO_DETECT=TRUE")
             if header:
@@ -193,8 +193,8 @@ class DuckDBClient:
         """
         try:
             if parameters:
-                # DuckDB's from_query does not support parameters directly, so use string formatting or parameterize safely
-                # For now, raise NotImplementedError for parameterized queries
+                # DuckDB's from_query does not support parameters directly.
+                # Use string formatting or parameterize safely.
                 raise NotImplementedError("Parameterized queries are not supported for export_query_to_csv.")
             relation = self.connection.from_query(query)
             relation.write_csv(str(csv_path))
@@ -216,7 +216,10 @@ class DuckDBClient:
             DatabaseError: If listing tables fails
         """
         try:
-            query = f"SELECT table_name FROM information_schema.tables WHERE table_schema = '{schema}' AND table_type = 'BASE TABLE'"
+            query = (
+                f"SELECT table_name FROM information_schema.tables "
+                f"WHERE table_schema = '{schema}' AND table_type = 'BASE TABLE'"
+            )
             result = self.execute_query(query)
             return [row[0] for row in result.fetchall()]
         except Exception as e:

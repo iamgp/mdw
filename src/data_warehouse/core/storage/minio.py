@@ -2,6 +2,8 @@
 
 import io
 import json
+import os
+from collections.abc import Mapping
 from typing import Any
 
 from minio import Minio
@@ -20,7 +22,7 @@ class MinioClient:
     def __new__(cls):
         """Implement singleton pattern for MinIO client."""
         if cls._instance is None:
-            cls._instance = super(MinioClient, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
@@ -64,7 +66,8 @@ class MinioClient:
                         "environment": settings.ENVIRONMENT,
                     }
 
-                    self.client.set_bucket_tags(bucket["name"], tags)
+                    self.client.set_bucket_tags(bucket["name"], tags)  # type: ignore[arg-type]
+                    # Pyright: set_bucket_tags expects Tags, dict[str, str] is valid for Minio SDK.
                     logger.info(f"Bucket '{bucket['name']}' created")
                 else:
                     logger.debug(f"Bucket '{bucket['name']}' already exists")
@@ -78,7 +81,7 @@ class MinioClient:
         object_name: str,
         file_data: bytes | io.BytesIO | str,
         content_type: str = "application/octet-stream",
-        metadata: dict[str, str] | None = None,
+        metadata: 'Mapping[str, str | list[str] | tuple[str, ...]] | None' = None,
     ) -> None:
         """Upload a file to MinIO.
 
@@ -94,50 +97,40 @@ class MinioClient:
         """
         try:
             # Handle different types of file_data
-            if isinstance(file_data, str):
-                # Treat as a filepath
-                with open(file_data, "rb") as file:
-                    file_size = file.seek(0, io.SEEK_END)
-                    file.seek(0)
-                    self.client.put_object(
-                        bucket_name,
-                        object_name,
-                        file,
-                        file_size,
-                        content_type=content_type,
-                        metadata=metadata,
-                    )
-            elif isinstance(file_data, bytes):
-                # Bytes data
-                self.client.put_object(
-                    bucket_name,
-                    object_name,
-                    io.BytesIO(file_data),
-                    len(file_data),
-                    content_type=content_type,
-                    metadata=metadata,
-                )
+            # Handle bytes, BytesIO, or str (filepath)
+            if isinstance(file_data, bytes):
+                file = io.BytesIO(file_data)
+                size = len(file_data)
+                need_close = False
             elif isinstance(file_data, io.BytesIO):
-                # BytesIO object
-                file_size = file_data.getbuffer().nbytes
-                self.client.put_object(
-                    bucket_name,
-                    object_name,
-                    file_data,
-                    file_size,
-                    content_type=content_type,
-                    metadata=metadata,
-                )
+                file = file_data
+                size = file_data.getbuffer().nbytes
+                need_close = False
             else:
-                raise ValueError(
-                    "file_data must be a filepath string, bytes, or BytesIO object"
-                )
+                file = open(file_data, "rb")
+                try:
+                    size = os.path.getsize(file_data)
+                except Exception:
+                    file.seek(0, 2)
+                    size = file.tell()
+                    file.seek(0)
+                need_close = True
 
-            logger.debug(f"Uploaded object '{object_name}' to bucket '{bucket_name}'")
-        except (OSError, S3Error, ValueError) as e:
-            logger.error(
-                f"Failed to upload object '{object_name}' to bucket '{bucket_name}': {e}"
+            self.client.put_object(
+                bucket_name,
+                object_name,
+                file,
+                size,
+                content_type=content_type,
+                metadata=metadata if metadata is None else dict(metadata),  # type: ignore[arg-type]
+                # Pyright: Minio expects Dict[str, str | List[str] | Tuple[str]], cast as needed.
             )
+            if need_close:
+                file.close()
+
+                logger.debug(f"Uploaded object '{object_name}' to bucket '{bucket_name}'")
+        except (OSError, S3Error, ValueError) as e:
+            logger.error(f"Failed to upload object '{object_name}' to bucket '{bucket_name}': {e}")
             raise StorageError(f"Failed to upload object '{object_name}'") from e
 
     def download_file(
@@ -159,6 +152,7 @@ class MinioClient:
         Raises:
             StorageError: If download fails
         """
+        response = None
         try:
             response = self.client.get_object(bucket_name, object_name)
 
@@ -174,18 +168,14 @@ class MinioClient:
                 logger.debug(f"Downloaded object '{object_name}' to memory")
                 return data
         except S3Error as e:
-            logger.error(
-                f"Failed to download object '{object_name}' from bucket '{bucket_name}': {e}"
-            )
+            logger.error(f"Failed to download object '{object_name}' from bucket '{bucket_name}': {e}")
             raise StorageError(f"Failed to download object '{object_name}'") from e
         finally:
-            if "response" in locals():
+            if response is not None:
                 response.close()
                 response.release_conn()
 
-    def list_objects(
-        self, bucket_name: str, prefix: str = "", recursive: bool = True
-    ) -> list[dict[str, Any]]:
+    def list_objects(self, bucket_name: str, prefix: str = "", recursive: bool = True) -> list[dict[str, Any]]:
         """List objects in a bucket with an optional prefix.
 
         Args:
@@ -200,10 +190,8 @@ class MinioClient:
             StorageError: If listing objects fails
         """
         try:
-            objects = self.client.list_objects(
-                bucket_name, prefix=prefix, recursive=recursive
-            )
-            result = []
+            objects = self.client.list_objects(bucket_name, prefix=prefix, recursive=recursive)
+            result: list[dict[str, Any]] = []
 
             for obj in objects:
                 result.append(
@@ -218,9 +206,7 @@ class MinioClient:
             return result
         except S3Error as e:
             logger.error(f"Failed to list objects in bucket '{bucket_name}': {e}")
-            raise StorageError(
-                f"Failed to list objects in bucket '{bucket_name}'"
-            ) from e
+            raise StorageError(f"Failed to list objects in bucket '{bucket_name}'") from e
 
     def remove_object(self, bucket_name: str, object_name: str) -> None:
         """Remove an object from a bucket.
@@ -236,9 +222,7 @@ class MinioClient:
             self.client.remove_object(bucket_name, object_name)
             logger.debug(f"Removed object '{object_name}' from bucket '{bucket_name}'")
         except S3Error as e:
-            logger.error(
-                f"Failed to remove object '{object_name}' from bucket '{bucket_name}': {e}"
-            )
+            logger.error(f"Failed to remove object '{object_name}' from bucket '{bucket_name}': {e}")
             raise StorageError(f"Failed to remove object '{object_name}'") from e
 
     def upload_json(
@@ -266,7 +250,8 @@ class MinioClient:
                 object_name,
                 json_bytes,
                 content_type="application/json",
-                metadata=metadata,
+                metadata=metadata if metadata is None else dict(metadata),  # type: ignore[arg-type]
+# Pyright: Minio expects Dict[str, str | List[str] | Tuple[str]], cast as needed.
             )
         except (TypeError, ValueError) as e:
             logger.error(f"Failed to serialize JSON data: {e}")
@@ -292,9 +277,7 @@ class MinioClient:
             raise StorageError(f"Failed to download JSON object '{object_name}'")
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON data from object '{object_name}': {e}")
-            raise StorageError(
-                f"Failed to parse JSON data from object '{object_name}'"
-            ) from e
+            raise StorageError(f"Failed to parse JSON data from object '{object_name}'") from e
 
 
 def get_minio_client() -> MinioClient:

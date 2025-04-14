@@ -24,6 +24,55 @@ from data_warehouse.core.exceptions import (
 F = TypeVar("F", bound=Callable[..., Any])
 
 
+def _handle_click_abort(exit_on_error: bool) -> None:
+    click.echo("\nOperation aborted by user.", err=True)
+    if exit_on_error:
+        sys.exit(1)
+
+
+def _handle_usage_error(e: Exception, exit_on_error: bool) -> None:
+    click.secho(f"Error: {str(e)}", fg="red", err=True)
+    if exit_on_error:
+        sys.exit(2)
+
+
+def _handle_validation_error(e: Exception, exit_on_error: bool) -> None:
+    click.secho(f"Validation Error: {str(e)}", fg="red", err=True)
+    if exit_on_error:
+        sys.exit(3)
+
+
+def _handle_database_error(e: Exception, exit_on_error: bool) -> None:
+    click.secho(f"Database Error: {str(e)}", fg="red", err=True)
+    if exit_on_error:
+        sys.exit(4)
+
+
+def _handle_storage_error(e: Exception, exit_on_error: bool) -> None:
+    click.secho(f"Storage Error: {str(e)}", fg="red", err=True)
+    if exit_on_error:
+        sys.exit(5)
+
+
+def _handle_datawarehouse_error(e: Exception, exit_on_error: bool) -> None:
+    click.secho(f"Error: {str(e)}", fg="red", err=True)
+    if exit_on_error:
+        sys.exit(6)
+
+
+def _handle_unexpected_error(e: Exception, exit_on_error: bool) -> None:
+    click.secho("An unexpected error occurred:", fg="red", err=True)
+    click.secho(str(e), fg="red", err=True)
+    logger.error(f"Unexpected error: {str(e)}")
+    logger.debug(f"Traceback: {traceback.format_exc()}")
+    if settings.LOG_LEVEL == "DEBUG":
+        click.echo(traceback.format_exc(), err=True)
+    else:
+        click.echo("Run with --verbose for detailed error information.", err=True)
+    if exit_on_error:
+        sys.exit(10)
+
+
 def handle_exceptions(exit_on_error: bool = True) -> Callable[[F], F]:
     """Decorator to handle exceptions in a consistent manner.
 
@@ -40,55 +89,19 @@ def handle_exceptions(exit_on_error: bool = True) -> Callable[[F], F]:
             try:
                 return func(*args, **kwargs)
             except click.Abort:
-                # Handle ctrl+c
-                click.echo("\nOperation aborted by user.", err=True)
-                if exit_on_error:
-                    sys.exit(1)
+                _handle_click_abort(exit_on_error)
             except click.UsageError as e:
-                # Handle CLI usage errors
-                click.secho(f"Error: {str(e)}", fg="red", err=True)
-                if exit_on_error:
-                    sys.exit(2)
+                _handle_usage_error(e, exit_on_error)
             except ValidationError as e:
-                # Handle validation errors
-                click.secho(f"Validation Error: {str(e)}", fg="red", err=True)
-                if exit_on_error:
-                    sys.exit(3)
+                _handle_validation_error(e, exit_on_error)
             except DatabaseError as e:
-                # Handle database errors
-                click.secho(f"Database Error: {str(e)}", fg="red", err=True)
-                if exit_on_error:
-                    sys.exit(4)
+                _handle_database_error(e, exit_on_error)
             except StorageError as e:
-                # Handle storage errors
-                click.secho(f"Storage Error: {str(e)}", fg="red", err=True)
-                if exit_on_error:
-                    sys.exit(5)
+                _handle_storage_error(e, exit_on_error)
             except DataWarehouseError as e:
-                # Handle known application errors
-                click.secho(f"Error: {str(e)}", fg="red", err=True)
-                if exit_on_error:
-                    sys.exit(6)
+                _handle_datawarehouse_error(e, exit_on_error)
             except Exception as e:
-                # Handle unexpected errors
-                click.secho("An unexpected error occurred:", fg="red", err=True)
-                click.secho(str(e), fg="red", err=True)
-
-                # Log the full traceback for debugging
-                logger.error(f"Unexpected error: {str(e)}")
-                logger.debug(f"Traceback: {traceback.format_exc()}")
-
-                # Show traceback in debug mode
-                if settings.LOG_LEVEL == "DEBUG":
-                    click.echo(traceback.format_exc(), err=True)
-                else:
-                    click.echo(
-                        "Run with --verbose for detailed error information.", err=True
-                    )
-
-                if exit_on_error:
-                    sys.exit(10)
-
+                _handle_unexpected_error(e, exit_on_error)
             return None  # Should only reach here if exit_on_error is False
 
         return wrapper  # type: ignore
@@ -96,9 +109,7 @@ def handle_exceptions(exit_on_error: bool = True) -> Callable[[F], F]:
     return decorator
 
 
-def confirm_action(
-    message: str, abort_message: str = "Operation cancelled.", default: bool = False
-) -> bool:
+def confirm_action(message: str, abort_message: str = "Operation cancelled.", default: bool = False) -> bool:
     """Ask for confirmation before proceeding with a potentially dangerous action.
 
     Args:

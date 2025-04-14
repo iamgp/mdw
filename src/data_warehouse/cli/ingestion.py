@@ -3,6 +3,8 @@
 import click
 from loguru import logger
 
+from data_warehouse.utils.error_handler import handle_exceptions
+
 
 @click.group()
 def ingestion():
@@ -13,12 +15,8 @@ def ingestion():
     pass
 
 
-import click
-from loguru import logger
-+from data_warehouse.utils.error_handler import handle_exceptions
-
 @ingestion.command("list-sources")
-+@handle_exceptions()
+@handle_exceptions()
 def list_sources():
     """List all available data sources for ingestion."""
     click.echo("Available data sources:")
@@ -28,6 +26,7 @@ def list_sources():
     sources = ["csv", "json", "postgres", "api"]
     for source in sources:
         click.echo(f"- {source}")
+
 
 @ingestion.command("run")
 @click.argument("source", type=click.Choice(["csv", "json", "postgres", "api"]))
@@ -70,6 +69,7 @@ def run_ingestion(
     # For now, just show a placeholder message
     click.echo("Ingestion job started (placeholder for actual implementation)")
     click.echo("Check logs for progress updates")
+
 
 if __name__ == "__main__":
     ingestion()
