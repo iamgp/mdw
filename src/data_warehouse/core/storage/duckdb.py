@@ -12,6 +12,9 @@ from loguru import logger
 from data_warehouse.config.settings import settings
 from data_warehouse.core.exceptions import DatabaseError
 
+# Define a type alias for DuckDB result for type safety
+DuckDBResult = duckdb.DuckDBPyConnection
+
 
 class DuckDBClient:
     """DuckDB client for analytical queries."""
@@ -50,9 +53,7 @@ class DuckDBClient:
             self.connection.close()
             logger.debug("DuckDB connection closed")
 
-    def execute_query(
-        self, query: str, parameters: dict[str, Any] | None = None
-    ) -> duckdb.DuckDBPyResult:
+    def execute_query(self, query: str, parameters: dict[str, Any] | None = None) -> DuckDBResult:
         """Execute a SQL query on DuckDB.
 
         Args:
@@ -93,13 +94,9 @@ class DuckDBClient:
             return result.df()
         except Exception as e:
             logger.error(f"Failed to convert DuckDB result to DataFrame: {e}")
-            raise DatabaseError(
-                f"Failed to convert DuckDB result to DataFrame: {e}"
-            ) from e
+            raise DatabaseError(f"Failed to convert DuckDB result to DataFrame: {e}") from e
 
-    def create_table_from_query(
-        self, table_name: str, query: str, replace: bool = False
-    ) -> None:
+    def create_table_from_query(self, table_name: str, query: str, replace: bool = False) -> None:
         """Create a table from a query.
 
         Args:
@@ -111,17 +108,13 @@ class DuckDBClient:
             DatabaseError: If table creation fails
         """
         try:
-            mode = (
-                "CREATE OR REPLACE TABLE" if replace else "CREATE TABLE IF NOT EXISTS"
-            )
+            mode = "CREATE OR REPLACE TABLE" if replace else "CREATE TABLE IF NOT EXISTS"
             full_query = f"{mode} {table_name} AS {query}"
             self.execute_query(full_query)
             logger.info(f"Table {table_name} created from query")
         except Exception as e:
             logger.error(f"Failed to create table {table_name} from query: {e}")
-            raise DatabaseError(
-                f"Failed to create table {table_name} from query"
-            ) from e
+            raise DatabaseError(f"Failed to create table {table_name} from query") from e
 
     def create_view(self, view_name: str, query: str, replace: bool = False) -> None:
         """Create a view from a query.
@@ -168,9 +161,7 @@ class DuckDBClient:
             DatabaseError: If CSV loading fails
         """
         try:
-            mode = (
-                "CREATE OR REPLACE TABLE" if replace else "CREATE TABLE IF NOT EXISTS"
-            )
+            mode = "CREATE OR REPLACE TABLE" if replace else "CREATE TABLE IF NOT EXISTS"
 
             options = []
             if auto_detect:
@@ -187,13 +178,9 @@ class DuckDBClient:
             logger.info(f"Loaded CSV data from {csv_path} into table {table_name}")
         except Exception as e:
             logger.error(f"Failed to load CSV data into table {table_name}: {e}")
-            raise DatabaseError(
-                f"Failed to load CSV data into table {table_name}"
-            ) from e
+            raise DatabaseError(f"Failed to load CSV data into table {table_name}") from e
 
-    def export_query_to_csv(
-        self, query: str, csv_path: str | Path, parameters: dict[str, Any] | None = None
-    ) -> None:
+    def export_query_to_csv(self, query: str, csv_path: str | Path, parameters: dict[str, Any] | None = None) -> None:
         """Export query results to a CSV file.
 
         Args:
@@ -205,8 +192,12 @@ class DuckDBClient:
             DatabaseError: If CSV export fails
         """
         try:
-            result = self.execute_query(query, parameters)
-            result.write_csv(str(csv_path))
+            if parameters:
+                # DuckDB's from_query does not support parameters directly, so use string formatting or parameterize safely
+                # For now, raise NotImplementedError for parameterized queries
+                raise NotImplementedError("Parameterized queries are not supported for export_query_to_csv.")
+            relation = self.connection.from_query(query)
+            relation.write_csv(str(csv_path))
             logger.info(f"Exported query results to {csv_path}")
         except Exception as e:
             logger.error(f"Failed to export query results to CSV: {e}")
@@ -275,14 +266,14 @@ class DuckDBClient:
 
 
 @contextlib.contextmanager
-def get_duckdb_connection() -> Generator[duckdb.DuckDBPyConnection, None, None]:
+def get_duckdb_connection() -> Generator[Any, None, None]:
     """Get a DuckDB connection context manager.
 
     Yields:
         DuckDB connection
 
     Raises:
-        DatabaseError: If connection fails
+        DatabaseError: If connection creation fails
     """
     client = None
     try:

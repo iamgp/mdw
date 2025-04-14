@@ -75,6 +75,24 @@ data_warehouse/
    cp .env.example .env
    ```
 
+## Environment Variables
+
+The following environment variables can be configured:
+
+- `POSTGRES_HOST`: PostgreSQL host (default: localhost)
+- `POSTGRES_PORT`: PostgreSQL port (default: 5432)
+- `POSTGRES_USER`: PostgreSQL username (default: postgres)
+- `POSTGRES_PASSWORD`: PostgreSQL password
+- `POSTGRES_DB`: PostgreSQL database name (default: data_warehouse)
+- `MINIO_HOST`: MinIO host (default: localhost)
+- `MINIO_PORT`: MinIO port (default: 9000)
+- `MINIO_ACCESS_KEY`: MinIO access key
+- `MINIO_SECRET_KEY`: MinIO secret key
+- `DATA_WAREHOUSE_ROOT`: (Optional) Absolute path to the project root directory. If set, this overrides auto-detection.
+  - Resolution order: (1) If DATA_WAREHOUSE_ROOT is set, it is used as the project root. (2) Otherwise, the root is auto-detected as three levels up from the config file location.
+  - Recommended to set in containerized or production environments for robust path resolution.
+- `LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+
 ## Development
 
 1. Ensure PostgreSQL is running and accessible with the credentials in your `.env` file.

@@ -23,6 +23,7 @@ dependencies = [
     "pydantic-settings>=2.2.1",
     "python-dotenv>=1.0.1",
     "rich>=13.7.0",
+    "minio>=7.2.15",
 ]
 requires-python = ">=3.11"
 
@@ -61,7 +62,7 @@ envs.default.dependencies = [
 ]
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 target-version = "py311"
 
 [tool.ruff.lint]
@@ -122,4 +123,7 @@ addopts = "-ra -q --cov=data_warehouse --cov-report=xml --cov-report=term-missin
 asyncio_mode = "auto"
 
 [project.scripts]
+# Entry point for the CLI tool. Run with: data-warehouse [command]
+# Environment Variables:
+# DATA_WAREHOUSE_ROOT - Optional: Explicitly set the project root directory
 data-warehouse = "data_warehouse.cli.main:cli"

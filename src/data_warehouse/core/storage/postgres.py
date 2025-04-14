@@ -2,11 +2,11 @@
 
 import contextlib
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, cast
 
 import psycopg
-from psycopg import AsyncConnection, AsyncCursor
-from psycopg.rows import dict_row_factory
+from psycopg import AsyncConnection, AsyncCursor, sql
+from psycopg.rows import dict_row
 
 from data_warehouse.config.settings import settings
 from data_warehouse.core.exceptions import DatabaseError
@@ -14,9 +14,7 @@ from data_warehouse.utils.logger import logger
 
 
 @contextlib.asynccontextmanager
-async def get_postgres_connection() -> AsyncGenerator[
-    AsyncConnection[dict[str, Any]], None
-]:
+async def get_postgres_connection() -> AsyncGenerator[AsyncConnection[Any], None]:
     """Get a PostgreSQL connection.
 
     Yields:
@@ -25,6 +23,7 @@ async def get_postgres_connection() -> AsyncGenerator[
     Raises:
         DatabaseError: If connection fails
     """
+    conn = None
     try:
         conn = await psycopg.AsyncConnection.connect(
             host=settings.POSTGRES_HOST,
@@ -32,7 +31,7 @@ async def get_postgres_connection() -> AsyncGenerator[
             user=settings.POSTGRES_USER,
             password=settings.POSTGRES_PASSWORD,
             dbname=settings.POSTGRES_DB,
-            row_factory=dict_row_factory,
+            row_factory=dict_row,
         )
         logger.debug("PostgreSQL connection established")
         yield conn
@@ -40,13 +39,13 @@ async def get_postgres_connection() -> AsyncGenerator[
         logger.error(f"Failed to connect to PostgreSQL: {e}")
         raise DatabaseError("Failed to connect to PostgreSQL") from e
     finally:
-        if "conn" in locals():
+        if conn is not None:
             logger.debug("Closing PostgreSQL connection")
             await conn.close()
 
 
 @contextlib.asynccontextmanager
-async def get_postgres_cursor() -> AsyncGenerator[AsyncCursor[dict[str, Any]], None]:
+async def get_postgres_cursor() -> AsyncGenerator[AsyncCursor[Any], None]:
     """Get a PostgreSQL cursor.
 
     Yields:
@@ -78,9 +77,9 @@ async def execute_query(
     """
     try:
         async with get_postgres_cursor() as cursor:
-            await cursor.execute(query, params)
+            await cursor.execute(sql.SQL(query), params)
             if cursor.description:
-                return await cursor.fetchall()
+                return cast(list[dict[str, Any]], await cursor.fetchall())
             return []
     except Exception as e:
         logger.error(f"Failed to execute PostgreSQL query: {e}")
