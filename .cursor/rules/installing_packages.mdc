@@ -1,0 +1,12 @@
+---
+description: when installing any sort of python package
+globs: 
+alwaysApply: false
+---
+When installing libraries in Python, do not rely solely on your own knowledge or outdated resources.
+
+Your knowledge may have a cut-off date, and you might not be aware of all the latest developments in the Python ecosystem.
+
+This means that instead of picking a version manually (via updating the `pyproject.toml` file), you should use uv to install it:
+
+`uv add my-package`
