@@ -88,7 +88,9 @@ The following environment variables can be configured:
 - `MINIO_PORT`: MinIO port (default: 9000)
 - `MINIO_ACCESS_KEY`: MinIO access key
 - `MINIO_SECRET_KEY`: MinIO secret key
-- `DATA_WAREHOUSE_ROOT`: Explicitly set the project root directory (optional, auto-detected by default)
+- `DATA_WAREHOUSE_ROOT`: (Optional) Absolute path to the project root directory. If set, this overrides auto-detection.
+  - Resolution order: (1) If DATA_WAREHOUSE_ROOT is set, it is used as the project root. (2) Otherwise, the root is auto-detected as three levels up from the config file location.
+  - Recommended to set in containerized or production environments for robust path resolution.
 - `LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 
 ## Development

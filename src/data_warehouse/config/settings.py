@@ -26,13 +26,17 @@ class Settings(BaseSettings):
                     )
                 ),
             )
-        )
+        ),
+        description=(
+            "Absolute path to the project root. "
+            "Resolution order: (1) DATA_WAREHOUSE_ROOT env var, "
+            "(2) three levels up from this file. "
+            "Set DATA_WAREHOUSE_ROOT to override in containers or production."
+        ),
     )
 
     # Environment setting
-    ENVIRONMENT: Literal["development", "testing", "production"] = Field(
-        default="development"
-    )
+    ENVIRONMENT: Literal["development", "testing", "production"] = Field(default="development")
 
     # Database settings
     POSTGRES_HOST: str = Field(default="localhost")
