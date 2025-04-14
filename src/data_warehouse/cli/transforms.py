@@ -68,6 +68,7 @@ def run_transform(model: str | None = None, full_refresh: bool = False):
 
 @transforms.command("test")
 @click.argument("model", required=False)
+@handle_exceptions()
 def test_transform(model: str | None = None):
     """Run tests on the transformed data.
 
@@ -93,7 +94,6 @@ def test_transform(model: str | None = None):
     click.echo("Test job started (placeholder for actual implementation)")
     click.echo("Command that would run: " + cmd)
     click.echo("Check logs for progress updates")
-
 
 if __name__ == "__main__":
     transforms()
