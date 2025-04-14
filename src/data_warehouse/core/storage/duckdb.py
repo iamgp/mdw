@@ -7,13 +7,14 @@ from pathlib import Path
 from typing import Any
 
 import duckdb
+import pandas as pd  # type: ignore[import-unresolved]
 from loguru import logger
 
 from data_warehouse.config.settings import settings
 from data_warehouse.core.exceptions import DatabaseError
 
 # Define a type alias for DuckDB result for type safety
-DuckDBResult = duckdb.DuckDBPyConnection
+DuckDBResult = duckdb.DuckDBPyRelation
 
 
 class DuckDBClient:
@@ -61,7 +62,7 @@ class DuckDBClient:
             parameters: Optional query parameters
 
         Returns:
-            Query result
+            DuckDBPyRelation result
 
         Raises:
             DatabaseError: If query execution fails
@@ -71,12 +72,15 @@ class DuckDBClient:
                 result = self.connection.execute(query, parameters)
             else:
                 result = self.connection.execute(query)
-            return result
+            # If result is a connection, call .execute() again to get relation
+            if isinstance(result, duckdb.DuckDBPyConnection):
+                result = result.execute(query, parameters) if parameters else result.execute(query)
+            return result  # type: ignore
         except Exception as e:
             logger.error(f"Failed to execute DuckDB query: {e}")
             raise DatabaseError(f"Failed to execute DuckDB query: {e}") from e
 
-    def query_to_df(self, query: str, parameters: dict[str, Any] | None = None) -> Any:
+    def query_to_df(self, query: str, parameters: dict[str, Any] | None = None) -> pd.DataFrame:
         """Execute a query and return results as a pandas DataFrame.
 
         Args:
@@ -91,7 +95,7 @@ class DuckDBClient:
         """
         try:
             result = self.execute_query(query, parameters)
-            return result.df()
+            return result.df()  # type: ignore
         except Exception as e:
             logger.error(f"Failed to convert DuckDB result to DataFrame: {e}")
             raise DatabaseError(f"Failed to convert DuckDB result to DataFrame: {e}") from e
