@@ -30,6 +30,7 @@ def list_sources():
 @click.option("--file", "-f", help="Source file path for file-based ingestion.")
 @click.option("--table", "-t", help="Source table for database ingestion.")
 @click.option("--endpoint", "-e", help="API endpoint for API-based ingestion.")
+@handle_exceptions()
 def run_ingestion(
     source: str,
     file: str | None = None,
@@ -65,7 +66,6 @@ def run_ingestion(
     # For now, just show a placeholder message
     click.echo("Ingestion job started (placeholder for actual implementation)")
     click.echo("Check logs for progress updates")
-
 
 if __name__ == "__main__":
     ingestion()
