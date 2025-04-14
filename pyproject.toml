@@ -123,4 +123,7 @@ addopts = "-ra -q --cov=data_warehouse --cov-report=xml --cov-report=term-missin
 asyncio_mode = "auto"
 
 [project.scripts]
+# Entry point for the CLI tool. Run with: data-warehouse [command]
+# Environment Variables:
+# DATA_WAREHOUSE_ROOT - Optional: Explicitly set the project root directory
 data-warehouse = "data_warehouse.cli.main:cli"

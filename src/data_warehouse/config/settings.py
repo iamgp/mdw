@@ -1,5 +1,6 @@
 """Configuration settings for the data warehouse."""
 
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -12,7 +13,20 @@ class Settings(BaseSettings):
 
     # Project paths
     PROJECT_ROOT: Path = Field(
-        default_factory=lambda: Path(__file__).parent.parent.parent.parent
+        default_factory=lambda: Path(
+            os.environ.get(
+                "DATA_WAREHOUSE_ROOT",  # First check if explicitly set in env
+                # If not set, try to determine from file location or working directory
+                os.path.abspath(
+                    os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)),  # Config dir
+                        "..",
+                        "..",
+                        "..",  # Up to project root
+                    )
+                ),
+            )
+        )
     )
 
     # Environment setting

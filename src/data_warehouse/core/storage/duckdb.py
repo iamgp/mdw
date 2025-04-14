@@ -12,6 +12,9 @@ from loguru import logger
 from data_warehouse.config.settings import settings
 from data_warehouse.core.exceptions import DatabaseError
 
+# Define a type alias for DuckDB result for type safety
+DuckDBResult = Any  # Using Any but with a clear name to indicate intent
+
 
 class DuckDBClient:
     """DuckDB client for analytical queries."""
@@ -52,7 +55,7 @@ class DuckDBClient:
 
     def execute_query(
         self, query: str, parameters: dict[str, Any] | None = None
-    ) -> Any:
+    ) -> DuckDBResult:
         """Execute a SQL query on DuckDB.
 
         Args:
