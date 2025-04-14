@@ -25,11 +25,16 @@ def list_transforms():
         click.echo(f"- {model}")
 
 
+import click
+from loguru import logger
+from data_warehouse.utils.error_handler import handle_exceptions
+
 @transforms.command("run")
 @click.argument("model", required=False)
 @click.option(
     "--full-refresh", is_flag=True, help="Perform a full refresh of the models."
 )
+@handle_exceptions()
 def run_transform(model: str | None = None, full_refresh: bool = False):
     """Run dbt transformations on the data warehouse.
 
@@ -60,7 +65,6 @@ def run_transform(model: str | None = None, full_refresh: bool = False):
     click.echo("Transformation job started (placeholder for actual implementation)")
     click.echo("Command that would run: " + cmd)
     click.echo("Check logs for progress updates")
-
 
 @transforms.command("test")
 @click.argument("model", required=False)
