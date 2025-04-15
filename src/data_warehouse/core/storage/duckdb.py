@@ -4,10 +4,12 @@ import contextlib
 import os
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import duckdb
-import pandas as pd  # type: ignore[import-unresolved]
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 from loguru import logger
 
 from data_warehouse.config.settings import settings
@@ -72,15 +74,13 @@ class DuckDBClient:
                 result = self.connection.execute(query, parameters)
             else:
                 result = self.connection.execute(query)
-            # If result is a connection, call .execute() again to get relation
-            if isinstance(result, duckdb.DuckDBPyConnection):
-                result = result.execute(query, parameters) if parameters else result.execute(query)
+
             return result  # type: ignore
         except Exception as e:
             logger.error(f"Failed to execute DuckDB query: {e}")
             raise DatabaseError(f"Failed to execute DuckDB query: {e}") from e
 
-    def query_to_df(self, query: str, parameters: dict[str, Any] | None = None) -> pd.DataFrame:
+    def query_to_df(self, query: str, parameters: dict[str, Any] | None = None) -> "DataFrame":
         """Execute a query and return results as a pandas DataFrame.
 
         Args:

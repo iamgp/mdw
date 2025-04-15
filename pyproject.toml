@@ -24,6 +24,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "rich>=13.7.0",
     "minio>=7.2.15",
+    "pandas>=2.2.3",
 ]
 requires-python = ">=3.11"
 
