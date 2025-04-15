@@ -4,16 +4,19 @@ import contextlib
 import os
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import duckdb
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 from loguru import logger
 
 from data_warehouse.config.settings import settings
 from data_warehouse.core.exceptions import DatabaseError
 
 # Define a type alias for DuckDB result for type safety
-DuckDBResult = duckdb.DuckDBPyConnection
+DuckDBResult = duckdb.DuckDBPyRelation
 
 
 class DuckDBClient:
@@ -24,7 +27,7 @@ class DuckDBClient:
     def __new__(cls):
         """Implement singleton pattern for DuckDB client."""
         if cls._instance is None:
-            cls._instance = super(DuckDBClient, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
@@ -38,7 +41,7 @@ class DuckDBClient:
 
         # Setup the connection
         self.db_path = settings.DUCKDB_PATH
-        self.connection = duckdb.connect(str(self.db_path))
+        self.connection = duckdb.connect(str(self.db_path))  # type: ignore
 
         # Configure settings for optimal analytical performance
         self.connection.execute("PRAGMA threads=8")
@@ -61,7 +64,7 @@ class DuckDBClient:
             parameters: Optional query parameters
 
         Returns:
-            Query result
+            DuckDBPyRelation result
 
         Raises:
             DatabaseError: If query execution fails
@@ -71,12 +74,13 @@ class DuckDBClient:
                 result = self.connection.execute(query, parameters)
             else:
                 result = self.connection.execute(query)
-            return result
+
+            return result  # type: ignore
         except Exception as e:
             logger.error(f"Failed to execute DuckDB query: {e}")
             raise DatabaseError(f"Failed to execute DuckDB query: {e}") from e
 
-    def query_to_df(self, query: str, parameters: dict[str, Any] | None = None) -> Any:
+    def query_to_df(self, query: str, parameters: dict[str, Any] | None = None) -> "DataFrame":
         """Execute a query and return results as a pandas DataFrame.
 
         Args:
@@ -91,7 +95,7 @@ class DuckDBClient:
         """
         try:
             result = self.execute_query(query, parameters)
-            return result.df()
+            return result.df()  # type: ignore
         except Exception as e:
             logger.error(f"Failed to convert DuckDB result to DataFrame: {e}")
             raise DatabaseError(f"Failed to convert DuckDB result to DataFrame: {e}") from e
@@ -163,7 +167,7 @@ class DuckDBClient:
         try:
             mode = "CREATE OR REPLACE TABLE" if replace else "CREATE TABLE IF NOT EXISTS"
 
-            options = []
+            options: list[str] = []
             if auto_detect:
                 options.append("AUTO_DETECT=TRUE")
             if header:
@@ -193,8 +197,8 @@ class DuckDBClient:
         """
         try:
             if parameters:
-                # DuckDB's from_query does not support parameters directly, so use string formatting or parameterize safely
-                # For now, raise NotImplementedError for parameterized queries
+                # DuckDB's from_query does not support parameters directly.
+                # Use string formatting or parameterize safely.
                 raise NotImplementedError("Parameterized queries are not supported for export_query_to_csv.")
             relation = self.connection.from_query(query)
             relation.write_csv(str(csv_path))
@@ -216,7 +220,10 @@ class DuckDBClient:
             DatabaseError: If listing tables fails
         """
         try:
-            query = f"SELECT table_name FROM information_schema.tables WHERE table_schema = '{schema}' AND table_type = 'BASE TABLE'"
+            query = (
+                f"SELECT table_name FROM information_schema.tables "
+                f"WHERE table_schema = '{schema}' AND table_type = 'BASE TABLE'"
+            )
             result = self.execute_query(query)
             return [row[0] for row in result.fetchall()]
         except Exception as e:

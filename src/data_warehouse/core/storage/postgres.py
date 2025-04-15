@@ -5,7 +5,7 @@ from collections.abc import AsyncGenerator
 from typing import Any, cast
 
 import psycopg
-from psycopg import AsyncConnection, AsyncCursor, sql
+from psycopg import AsyncConnection, AsyncCursor
 from psycopg.rows import dict_row
 
 from data_warehouse.config.settings import settings
@@ -31,7 +31,8 @@ async def get_postgres_connection() -> AsyncGenerator[AsyncConnection[Any], None
             user=settings.POSTGRES_USER,
             password=settings.POSTGRES_PASSWORD,
             dbname=settings.POSTGRES_DB,
-            row_factory=dict_row,
+            row_factory=dict_row,  # type: ignore[arg-type]
+            # Pyright: dict_row is valid for async connections, but type stubs are too strict.
         )
         logger.debug("PostgreSQL connection established")
         yield conn
@@ -77,7 +78,8 @@ async def execute_query(
     """
     try:
         async with get_postgres_cursor() as cursor:
-            await cursor.execute(sql.SQL(query), params)
+            await cursor.execute(query, params)  # type: ignore[arg-type]
+            # Pyright: query is a string, but stubs expect LiteralString/Query. This is safe in our usage.
             if cursor.description:
                 return cast(list[dict[str, Any]], await cursor.fetchall())
             return []

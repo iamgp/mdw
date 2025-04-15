@@ -1,7 +1,7 @@
 """Base classes for data warehouse components."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, cast
 
 from pydantic import BaseModel
 
@@ -124,17 +124,16 @@ class Pipeline(Component[ConfigT]):
 
         try:
             # Extract
-            extracted_data = []
+            extracted_data: list[Any] = []
             for extractor in self.extractors:
                 self.logger.info(f"Running extractor: {extractor.__class__.__name__}")
                 data = await extractor.extract()
                 extracted_data.append(data)
-                metrics["extractors"].append(
-                    {
-                        "name": extractor.__class__.__name__,
-                        "status": "success",
-                    }
-                )
+                cast(list[Any], metrics["extractors"]).append({
+                    "name": extractor.__class__.__name__,
+                    "status": "success",
+                })
+                # Explicitly cast metrics["extractors"] to list[Any] to silence Pyright type error.
 
             # Transform
             transformed_data = extracted_data

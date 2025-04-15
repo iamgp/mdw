@@ -1,23 +1,30 @@
 {
-  "include": ["src", "tests"],
-  "exclude": ["**/node_modules", "**/__pycache__", "**/.*"],
-  "typeCheckingMode": "strict",
+  "enableTypeIgnoreComments": true,
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*"
+  ],
+  "include": [
+    "src",
+    "tests"
+  ],
   "pythonVersion": "3.11",
   "reportMissingImports": true,
+  "reportMissingParameterType": true,
+  "reportMissingTypeArgument": true,
+  "reportMissingTypeStubs": false,
+  "reportPrivateImportUsage": true,
+  "reportUnknownArgumentType": true,
+  "reportUnknownLambdaType": true,
   "reportUnknownMemberType": true,
   "reportUnknownVariableType": true,
-  "reportUnknownArgumentType": true,
-  "reportMissingTypeArgument": true,
   "reportUntypedFunctionDecorator": true,
-  "reportUnknownLambdaType": true,
-  "reportMissingParameterType": true,
-  "reportPrivateImportUsage": true,
-  "useLibraryCodeForTypes": true,
-  "strictListInference": true,
   "strictDictionaryInference": true,
-  "strictSetInference": true,
+  "strictListInference": true,
   "strictParameterNoneValue": true,
-  "enableTypeIgnoreComments": true,
-  "venvPath": ".venv",
-  "pythonPlatform": "Darwin"
+  "strictSetInference": true,
+  "typeCheckingMode": "strict",
+  "useLibraryCodeForTypes": true,
+  "venvPath": ".venv"
 }

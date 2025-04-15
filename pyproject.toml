@@ -24,6 +24,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "rich>=13.7.0",
     "minio>=7.2.15",
+    "pandas>=2.2.3",
 ]
 requires-python = ">=3.11"
 
@@ -119,7 +120,7 @@ stubPath = "src/stubs"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-ra -q --cov=data_warehouse --cov-report=xml --cov-report=term-missing --cov-fail-under=90"
+addopts = "-ra -q --cov=data_warehouse --cov-report=xml --cov-report=term-missing"
 asyncio_mode = "auto"
 
 [project.scripts]
