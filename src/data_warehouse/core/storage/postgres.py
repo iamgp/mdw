@@ -23,6 +23,7 @@ async def get_postgres_connection() -> AsyncGenerator[AsyncConnection[Any], None
     Raises:
         DatabaseError: If connection fails
     """
+    logger.debug("Opening PostgreSQL connection...")
     conn = None
     try:
         conn = await psycopg.AsyncConnection.connect(
@@ -43,6 +44,7 @@ async def get_postgres_connection() -> AsyncGenerator[AsyncConnection[Any], None
         if conn is not None:
             logger.debug("Closing PostgreSQL connection")
             await conn.close()
+    logger.debug("PostgreSQL connection context exited")
 
 
 @contextlib.asynccontextmanager
@@ -55,15 +57,15 @@ async def get_postgres_cursor() -> AsyncGenerator[AsyncCursor[Any], None]:
     Raises:
         DatabaseError: If connection fails
     """
+    logger.debug("Opening PostgreSQL cursor...")
     async with get_postgres_connection() as conn:
         async with conn.cursor() as cursor:
             logger.debug("PostgreSQL cursor created")
             yield cursor
+    logger.debug("PostgreSQL cursor context exited")
 
 
-async def execute_query(
-    query: str, params: dict[str, Any] | None = None
-) -> list[dict[str, Any]]:
+async def execute_query(query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Execute a query on PostgreSQL.
 
     Args:
@@ -76,12 +78,16 @@ async def execute_query(
     Raises:
         DatabaseError: If query execution fails
     """
+    logger.info(f"Executing PostgreSQL query: {query}")
     try:
         async with get_postgres_cursor() as cursor:
             await cursor.execute(query, params)  # type: ignore[arg-type]
             # Pyright: query is a string, but stubs expect LiteralString/Query. This is safe in our usage.
             if cursor.description:
-                return cast(list[dict[str, Any]], await cursor.fetchall())
+                result = cast(list[dict[str, Any]], await cursor.fetchall())
+                logger.debug(f"Query returned {len(result)} rows")
+                logger.info("PostgreSQL query execution complete")
+                return result
             return []
     except Exception as e:
         logger.error(f"Failed to execute PostgreSQL query: {e}")
@@ -105,6 +111,7 @@ async def create_table(
     Raises:
         DatabaseError: If table creation fails
     """
+    logger.info(f"Creating table {table_name} in PostgreSQL...")
     existence_clause = "IF NOT EXISTS " if if_not_exists else ""
     column_definitions = [f"{name} {data_type}" for name, data_type in columns.items()]
 
@@ -120,6 +127,7 @@ async def create_table(
     except Exception as e:
         logger.error(f"Failed to create table {table_name}: {e}")
         raise DatabaseError(f"Failed to create table {table_name}") from e
+    logger.info(f"Create table {table_name} operation complete")
 
 
 async def initialize_postgres() -> None:

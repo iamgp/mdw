@@ -28,12 +28,22 @@ class Component(Generic[ConfigT], ABC):
     @abstractmethod
     async def initialize(self) -> None:
         """Initialize the component."""
-        raise NotImplementedError
+        self.logger.debug("Initializing component...")
+        try:
+            raise NotImplementedError
+        except Exception as e:
+            self.logger.error(f"Error in initialize: {e}")
+            raise
 
     @abstractmethod
     async def cleanup(self) -> None:
         """Clean up component resources."""
-        raise NotImplementedError
+        self.logger.debug("Cleaning up component...")
+        try:
+            raise NotImplementedError
+        except Exception as e:
+            self.logger.error(f"Error in cleanup: {e}")
+            raise
 
 
 class Extractor(Component[ConfigT], Generic[ConfigT, DataT]):
@@ -47,7 +57,12 @@ class Extractor(Component[ConfigT], Generic[ConfigT, DataT]):
             The extracted data
 
         """
-        raise NotImplementedError
+        self.logger.debug("Extracting data...")
+        try:
+            raise NotImplementedError
+        except Exception as e:
+            self.logger.error(f"Error in extract: {e}")
+            raise
 
 
 class Transformer(Component[ConfigT], Generic[ConfigT, DataT]):
@@ -64,7 +79,12 @@ class Transformer(Component[ConfigT], Generic[ConfigT, DataT]):
             The transformed data
 
         """
-        raise NotImplementedError
+        self.logger.debug("Transforming data...")
+        try:
+            raise NotImplementedError
+        except Exception as e:
+            self.logger.error(f"Error in transform: {e}")
+            raise
 
 
 class Loader(Component[ConfigT], Generic[ConfigT, DataT]):
@@ -78,7 +98,12 @@ class Loader(Component[ConfigT], Generic[ConfigT, DataT]):
             data: Data to load
 
         """
-        raise NotImplementedError
+        self.logger.debug("Loading data...")
+        try:
+            raise NotImplementedError
+        except Exception as e:
+            self.logger.error(f"Error in load: {e}")
+            raise
 
 
 class Pipeline(Component[ConfigT]):
@@ -112,6 +137,7 @@ class Pipeline(Component[ConfigT]):
             Dictionary containing pipeline execution metrics
 
         """
+        self.logger.info("Pipeline run started")
         metrics: dict[str, Any] = {
             "extractors": [],
             "transformers": [],
@@ -129,10 +155,12 @@ class Pipeline(Component[ConfigT]):
                 self.logger.info(f"Running extractor: {extractor.__class__.__name__}")
                 data = await extractor.extract()
                 extracted_data.append(data)
-                cast(list[Any], metrics["extractors"]).append({
-                    "name": extractor.__class__.__name__,
-                    "status": "success",
-                })
+                cast(list[Any], metrics["extractors"]).append(
+                    {
+                        "name": extractor.__class__.__name__,
+                        "status": "success",
+                    }
+                )
                 # Explicitly cast metrics["extractors"] to list[Any] to silence Pyright type error.
 
             # Transform
@@ -140,9 +168,7 @@ class Pipeline(Component[ConfigT]):
             for transformer in self.transformers:
                 transformer_name = transformer.__class__.__name__
                 self.logger.info(f"Running transformer: {transformer_name}")
-                transformed_data = [
-                    await transformer.transform(data) for data in transformed_data
-                ]
+                transformed_data = [await transformer.transform(data) for data in transformed_data]
                 metrics["transformers"].append(
                     {
                         "name": transformer_name,
@@ -162,9 +188,13 @@ class Pipeline(Component[ConfigT]):
                     }
                 )
 
+        except Exception as e:
+            self.logger.error(f"Pipeline run failed: {e}")
+            raise
         finally:
             # Cleanup all components
             for component in [*self.extractors, *self.transformers, *self.loaders]:
                 await component.cleanup()
 
+        self.logger.info("Pipeline run complete")
         return metrics

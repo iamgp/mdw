@@ -16,6 +16,7 @@ async def startup() -> None:
     Returns:
         None
     """
+    logger.info("Startup sequence initiated")
     # Setup logging configuration
     setup_logger()
     logger.info(f"Starting data warehouse in {settings.ENVIRONMENT} environment")
@@ -28,10 +29,12 @@ async def startup() -> None:
     # e.g., API server, scheduled jobs, etc.
 
     logger.info("Data warehouse initialization complete")
+    logger.info("Startup sequence complete")
 
 
 def main() -> None:
     """Main entry point for the application."""
+    logger.info("Main entry point called")
     try:
         asyncio.run(startup())
 
@@ -46,6 +49,7 @@ def main() -> None:
     except Exception as e:
         logger.error(f"Failed to start data warehouse: {e}")
         sys.exit(1)
+    logger.info("Main entry point complete")
 
 
 if __name__ == "__main__":
