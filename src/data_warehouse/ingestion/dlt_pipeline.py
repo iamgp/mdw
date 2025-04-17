@@ -1,3 +1,5 @@
+import logging
+import time
 from typing import Any
 
 import dlt
@@ -6,27 +8,48 @@ from .example_db_source import ExampleDBSource
 from .example_file_source import ExampleFileSource
 
 
-def run_dlt_pipeline(source: Any) -> None:
+def run_dlt_pipeline(source: Any, max_retries: int = 3, retry_delay: float = 2.0) -> None:
     """
-    Run the DLT pipeline for the given source connector.
+    Run the DLT pipeline for the given source connector with logging and retry logic.
     Args:
         source: The data source connector (e.g., database, API, file system).
+        max_retries: Maximum number of retries for transient errors.
+        retry_delay: Delay (seconds) between retries.
     Returns:
         None
     """
-    # Guard clause for invalid source
+    logger = logging.getLogger("dlt_pipeline")
+    logger.info(f"Starting DLT pipeline for source: {type(source).__name__}")
+
     if source is None:
+        logger.error("Source connector must be provided.")
         raise ValueError("Source connector must be provided.")
 
-    pipeline = dlt.pipeline(pipeline_name="data_ingestion", destination="duckdb", dataset_name="raw_data")
-    # Placeholder: Replace with actual extraction logic
-    data = source.extract()  # type: ignore[attr-defined]
-    pipeline.run(data, table_name="ingested_data", write_disposition="replace")
+    attempt = 0
+    while attempt < max_retries:
+        try:
+            pipeline = dlt.pipeline(pipeline_name="data_ingestion", destination="duckdb", dataset_name="raw_data")
+            data = source.extract()  # type: ignore[attr-defined]
+            logger.info(f"Extracted {len(data)} records from source.")
+            pipeline.run(data, table_name="ingested_data", write_disposition="replace")
+            logger.info("Pipeline run completed successfully.")
+            return
+        except Exception as exc:
+            attempt += 1
+            logger.error(f"Pipeline run failed on attempt {attempt}: {exc}")
+            if attempt < max_retries:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                logger.critical("Max retries reached. Pipeline failed.")
+                raise
 
 
 if __name__ == "__main__":
     import argparse
     import sys
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
     parser = argparse.ArgumentParser(description="Run DLT pipeline with ExampleFileSource or ExampleDBSource.")
     parser.add_argument("mode", choices=["file", "db"], help="Source type: file or db.")
@@ -39,7 +62,6 @@ if __name__ == "__main__":
             run_dlt_pipeline(source)
             print(f"Ingestion completed for file: {args.source_arg}")
         elif args.mode == "db":
-            # Simulate DB data and incremental loading
             db_data = [
                 {"id": 1, "name": "Alice"},
                 {"id": 2, "name": "Bob"},
@@ -52,7 +74,6 @@ if __name__ == "__main__":
             new_state = db_source.get_state()
             print(f"State after first run: {new_state}")
 
-            # Simulate new data for incremental load
             db_data.append({"id": 4, "name": "Dave"})
             print("Second run: ingest only new data")
             db_source_incremental = ExampleDBSource(db_data, last_id=new_state)
@@ -62,5 +83,5 @@ if __name__ == "__main__":
         else:
             raise ValueError("Invalid mode")
     except Exception as exc:
-        print(f"Error: {exc}", file=sys.stderr)
+        logging.critical(f"Error: {exc}")
         sys.exit(1)
