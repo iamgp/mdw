@@ -1,10 +1,10 @@
 site_name: Data Warehouse Documentation
 
 nav:
-  - Home: docs/index.md
-  - Getting Started: docs/getting-started.md
-  - User Guide: docs/user-guide.md
-  - API Documentation: docs/api/index.md
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - User Guide: user-guide.md
+  - API Documentation: api/index.md
 
 theme:
   name: material
