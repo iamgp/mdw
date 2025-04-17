@@ -11,3 +11,18 @@ theme:
   palette:
     primary: indigo
     accent: indigo
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+      watch:
+        - src/
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
