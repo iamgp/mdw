@@ -76,3 +76,4 @@ dev-debug.log
 # Environment variables
 .vscode
 # OS specific
+docs/site/

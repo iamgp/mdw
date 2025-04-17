@@ -4,6 +4,7 @@ import click
 
 from data_warehouse import __version__
 from data_warehouse.cli.deploy import deploy
+from data_warehouse.cli.docs import docs
 from data_warehouse.cli.ingestion import ingestion
 from data_warehouse.cli.monitor import monitor
 from data_warehouse.cli.storage import storage
@@ -37,6 +38,7 @@ cli.add_command(ingestion)
 cli.add_command(transforms)
 cli.add_command(deploy)
 cli.add_command(monitor)
+cli.add_command(docs)
 
 
 # Add top-level commands
@@ -95,9 +97,7 @@ def doctor():
     else:
         click.secho(f"Data directory: OK ({data_dir})", fg="green")
 
-    click.echo(
-        "\nRun 'data-warehouse storage status' for detailed storage connection status."
-    )
+    click.echo("\nRun 'data-warehouse storage status' for detailed storage connection status.")
 
 
 if __name__ == "__main__":
