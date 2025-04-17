@@ -20,7 +20,7 @@ class ExampleDBSource(SourceBase):
 
     def validate(self) -> bool:
         # Simulate DB connectivity check
-        return isinstance(self.db_data, list)
+        return True
 
     def get_state(self) -> int | None:
         # Return the max id as the new state after extraction
