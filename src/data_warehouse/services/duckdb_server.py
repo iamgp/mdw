@@ -27,7 +27,8 @@ class QueryRequest(BaseModel):
 
 
 @app.post("/query")
-async def execute_query(request: QueryRequest) -> list[dict[str, Any]]:
+async def execute_query(request: QueryRequest) -> dict[str, list[dict[str, Any]]]:
+    logger.info(f"Received DuckDB query: {request.query}")
     try:
         # Execute query with parameters if provided
         if request.parameters:
@@ -39,14 +40,17 @@ async def execute_query(request: QueryRequest) -> list[dict[str, Any]]:
         # Convert result to list of dictionaries
         rows: Any = result.fetchall()  # type: ignore
         # Pyright: fetchall() return type is dynamic.
-        columns: Any = getattr(result, 'description', None)  # type: ignore
+        columns: Any = getattr(result, "description", None)  # type: ignore
         if columns:
             column_names = [col[0] for col in columns]
-            return [dict(zip(column_names, row, strict=False)) for row in rows]
-        return []
+            records = [dict(zip(column_names, row, strict=False)) for row in rows]
+            logger.info(f"DuckDB query executed successfully, {len(records)} rows returned")
+            return {"result": records}
+        logger.info("DuckDB query executed successfully, 0 rows returned")
+        return {"result": []}
 
     except Exception as e:
-        logger.error(f"Query execution error: {str(e)}")
+        logger.error(f"DuckDB query failed: {e}")
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 

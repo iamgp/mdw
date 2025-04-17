@@ -67,8 +67,10 @@ async def _init_storage(force: bool):
         DatabaseError: If database initialization fails
         StorageError: If storage initialization fails
     """
+    log.info("Initializing storage (async)...")
     # TODO: Implement force reinitialization logic if needed
     await initialize_storage()
+    log.info("Storage initialization (async) complete")
 
 
 @storage.command("status")
@@ -87,6 +89,7 @@ def storage_status():
 
 
 async def _check_storage_status():  # type: ignore[reportRedeclaration]
+    log.info("Starting async storage status check...")
     # This is a placeholder for actual implementation
     # Import these inside the function to prevent circular imports
     from typing import Any
@@ -101,11 +104,11 @@ async def _check_storage_status():  # type: ignore[reportRedeclaration]
         async with get_postgres_connection() as conn:
             # Execute a simple query to verify connection
             cursor = await conn.execute("SELECT version()")
-            version = await cursor.fetchone()
-            if version is not None:
-                log.info(f"PostgreSQL: Connected - {version[0]}")
+            postgres_version = await cursor.fetchone()
+            if postgres_version is not None:
+                log.info(f"PostgreSQL: Connected - {postgres_version[0]}")
                 click.secho("✅ PostgreSQL: Connected", fg="green")
-                click.echo(f"   Version: {version[0]}")
+                click.echo(f"   Version: {postgres_version[0]}")
             else:
                 log.error("PostgreSQL: No version returned")
                 click.secho("❌ PostgreSQL: No version returned", fg="red")
@@ -118,59 +121,13 @@ async def _check_storage_status():  # type: ignore[reportRedeclaration]
     try:
         client = get_duckdb_client()
         result = client.execute_query("SELECT version()")
-        version_row = result.fetchone() if hasattr(result, 'fetchone') else None  # type: ignore[attr-defined]
+        version_row = result.fetchone() if hasattr(result, "fetchone") else None  # type: ignore[attr-defined]
         # Pyright: fetchone() return type is partially unknown, suppressing error.
-        version: Any = version_row[0] if version_row is not None else None  # type: ignore[index]
-        if version is not None:
-            log.info(f"DuckDB: Connected - {version}")
+        duckdb_version: Any = version_row[0] if version_row is not None else None  # type: ignore[index]
+        if duckdb_version is not None:
+            log.info(f"DuckDB: Connected - {duckdb_version}")
             click.secho("✅ DuckDB: Connected", fg="green")
-            click.echo(f"   Version: {version}")
-        else:
-            log.error("DuckDB: No version returned")
-            click.secho("❌ DuckDB: No version returned", fg="red")
-    except Exception as e:
-        log.error(f"DuckDB: Connection failed - {e}")
-        click.secho("❌ DuckDB: Connection failed", fg="red")
-        click.echo(f"   Error: {e}")
-
-    """Asynchronous implementation of storage status check."""
-    # This is a placeholder for actual implementation
-    # Import these inside the function to prevent circular imports
-    from typing import Any
-
-    from data_warehouse.core.storage.duckdb import get_duckdb_client
-    from data_warehouse.core.storage.postgres import get_postgres_connection
-
-    click.echo("Storage Status:")
-    # Check PostgreSQL
-    try:
-        async with get_postgres_connection() as conn:
-            # Execute a simple query to verify connection
-            cursor = await conn.execute("SELECT version()")
-            version = await cursor.fetchone()
-            if version is not None:
-                log.info(f"PostgreSQL: Connected - {version[0]}")
-                click.secho("✅ PostgreSQL: Connected", fg="green")
-                click.echo(f"   Version: {version[0]}")
-            else:
-                log.error("PostgreSQL: No version returned")
-                click.secho("❌ PostgreSQL: No version returned", fg="red")
-    except Exception as e:
-        log.error(f"PostgreSQL: Connection failed - {e}")
-        click.secho("❌ PostgreSQL: Connection failed", fg="red")
-        click.echo(f"   Error: {e}")
-
-    # Check DuckDB
-    try:
-        client = get_duckdb_client()
-        result = client.execute_query("SELECT version()")
-        version_row = result.fetchone() if hasattr(result, 'fetchone') else None  # type: ignore[attr-defined]
-        # Pyright: fetchone() return type is partially unknown, suppressing error.
-        version: Any = version_row[0] if version_row is not None else None  # type: ignore[index]
-        if version is not None:
-            log.info(f"DuckDB: Connected - {version}")
-            click.secho("✅ DuckDB: Connected", fg="green")
-            click.echo(f"   Version: {version}")
+            click.echo(f"   Version: {duckdb_version}")
         else:
             log.error("DuckDB: No version returned")
             click.secho("❌ DuckDB: No version returned", fg="red")
@@ -187,19 +144,17 @@ async def _check_storage_status():  # type: ignore[reportRedeclaration]
         # Pyright: list_buckets() return type is partially unknown, suppressing error.
         log.info(f"MinIO: Connected - {len(buckets)} buckets found {buckets}")
         click.secho("✅ MinIO: Connected", fg="green")
-        click.echo(
-            f"   Buckets: {', '.join(buckets) if buckets else 'No buckets found'}"
-        )
+        click.echo(f"   Buckets: {', '.join(buckets) if buckets else 'No buckets found'}")
     except Exception as e:
         log.error(f"MinIO: Connection failed - {e}")
         click.secho("❌ MinIO: Connection failed", fg="red")
         click.echo(f"   Error: {e}")
+    log.info("Async storage status check complete")
 
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(storage_status())
-
-
 
     storage()

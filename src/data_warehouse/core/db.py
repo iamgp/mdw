@@ -1,7 +1,6 @@
 """Database connection utilities."""
 
 import contextlib
-import logging
 from collections.abc import AsyncGenerator, Callable, Generator
 from pathlib import Path
 from typing import Any
@@ -9,6 +8,8 @@ from typing import Any
 import duckdb
 import psycopg
 from psycopg import AsyncCursor
+
+from data_warehouse.utils.logger import logger
 
 
 # Provide minimal local config and logger if missing
@@ -30,7 +31,7 @@ class DatabaseError(Exception):
     pass
 
 
-logger = logging.getLogger(__name__)
+logger = logger.bind(module=__name__)
 
 
 @contextlib.asynccontextmanager

@@ -81,7 +81,7 @@ class MinioClient:
         object_name: str,
         file_data: bytes | io.BytesIO | str,
         content_type: str = "application/octet-stream",
-        metadata: 'Mapping[str, str | list[str] | tuple[str, ...]] | None' = None,
+        metadata: "Mapping[str, str | list[str] | tuple[str, ...]] | None" = None,
     ) -> None:
         """Upload a file to MinIO.
 
@@ -152,6 +152,7 @@ class MinioClient:
         Raises:
             StorageError: If download fails
         """
+        logger.info(f"Downloading object '{object_name}' from bucket '{bucket_name}'")
         response = None
         try:
             response = self.client.get_object(bucket_name, object_name)
@@ -174,6 +175,7 @@ class MinioClient:
             if response is not None:
                 response.close()
                 response.release_conn()
+        logger.info(f"Download of object '{object_name}' from bucket '{bucket_name}' complete")
 
     def list_objects(self, bucket_name: str, prefix: str = "", recursive: bool = True) -> list[dict[str, Any]]:
         """List objects in a bucket with an optional prefix.
@@ -251,7 +253,7 @@ class MinioClient:
                 json_bytes,
                 content_type="application/json",
                 metadata=metadata if metadata is None else dict(metadata),  # type: ignore[arg-type]
-# Pyright: Minio expects Dict[str, str | List[str] | Tuple[str]], cast as needed.
+                # Pyright: Minio expects Dict[str, str | List[str] | Tuple[str]], cast as needed.
             )
         except (TypeError, ValueError) as e:
             logger.error(f"Failed to serialize JSON data: {e}")
@@ -295,6 +297,7 @@ def initialize_minio() -> None:
     Raises:
         StorageError: If initialization fails
     """
+    logger.info("Initializing MinIO storage...")
     try:
         client = get_minio_client()
         client.initialize_buckets()

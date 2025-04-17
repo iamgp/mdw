@@ -83,24 +83,34 @@ def handle_exceptions(exit_on_error: bool = True) -> Callable[[F], F]:
         A decorator that handles exceptions
     """
 
+    logger.debug(f"Creating exception handler decorator (exit_on_error={exit_on_error})")
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
+            logger.debug(f"Calling wrapped function: {func.__name__}")
             try:
                 return func(*args, **kwargs)
             except click.Abort:
+                logger.debug("Handling click.Abort exception")
                 _handle_click_abort(exit_on_error)
             except click.UsageError as e:
+                logger.debug(f"Handling click.UsageError: {e}")
                 _handle_usage_error(e, exit_on_error)
             except ValidationError as e:
+                logger.debug(f"Handling ValidationError: {e}")
                 _handle_validation_error(e, exit_on_error)
             except DatabaseError as e:
+                logger.debug(f"Handling DatabaseError: {e}")
                 _handle_database_error(e, exit_on_error)
             except StorageError as e:
+                logger.debug(f"Handling StorageError: {e}")
                 _handle_storage_error(e, exit_on_error)
             except DataWarehouseError as e:
+                logger.debug(f"Handling DataWarehouseError: {e}")
                 _handle_datawarehouse_error(e, exit_on_error)
             except Exception as e:
+                logger.debug(f"Handling unexpected Exception: {e}")
                 _handle_unexpected_error(e, exit_on_error)
             return None  # Should only reach here if exit_on_error is False
 
@@ -120,12 +130,16 @@ def confirm_action(message: str, abort_message: str = "Operation cancelled.", de
     Returns:
         True if the user confirmed, False otherwise
     """
+    logger.debug(f"Prompting user for confirmation: {message}")
     try:
         if click.confirm(message, default=default):
+            logger.debug("User confirmed action.")
             return True
         else:
             click.echo(abort_message)
+            logger.debug("User declined action.")
             return False
     except click.Abort:
         click.echo("\nOperation aborted by user.")
+        logger.debug("User aborted action via click.Abort.")
         return False
