@@ -52,9 +52,11 @@ class DuckDBClient:
 
     def close(self):
         """Close the DuckDB connection."""
+        logger.info("Closing DuckDB connection...")
         if hasattr(self, "connection") and self.connection:
             self.connection.close()
             logger.debug("DuckDB connection closed")
+        logger.info("DuckDB connection close complete")
 
     def execute_query(self, query: str, parameters: dict[str, Any] | None = None) -> DuckDBResult:
         """Execute a SQL query on DuckDB.
@@ -282,6 +284,7 @@ def get_duckdb_connection() -> Generator[Any, None, None]:
     Raises:
         DatabaseError: If connection creation fails
     """
+    logger.debug("Opening DuckDB connection context...")
     client = None
     try:
         client = DuckDBClient()
@@ -293,6 +296,7 @@ def get_duckdb_connection() -> Generator[Any, None, None]:
         # We don't close the connection here as it's managed by the singleton
         # This allows connection reuse throughout the application
         pass
+    logger.debug("DuckDB connection context exited")
 
 
 def get_duckdb_client() -> DuckDBClient:
