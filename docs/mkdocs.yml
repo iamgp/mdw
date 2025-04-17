@@ -1,1 +1,13 @@
-site_name: My Docs
+site_name: Data Warehouse Documentation
+
+nav:
+  - Home: docs/index.md
+  - Getting Started: docs/getting-started.md
+  - User Guide: docs/user-guide.md
+  - API Documentation: docs/api/index.md
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
