@@ -1,5 +1,5 @@
 # API Documentation
 
-This section will contain the auto-generated API reference for the Data Warehouse codebase.
+This section contains the auto-generated API reference for the Data Warehouse codebase.
 
-<!-- API reference will be generated here -->
+::: data_warehouse
