@@ -1,5 +1,6 @@
 """Transformation-related CLI commands."""
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -68,32 +69,89 @@ def run_transform(model: str | None = None, full_refresh: bool = False):
 
 @transforms.command("test")
 @click.argument("model", required=False)
+@click.option("--store-results", is_flag=True, help="Store test results in the monitoring database.")
+@click.option(
+    "--project-dir",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    help="DBT project directory.",
+)
+@click.option("--db-url", help="Database URL for storing results, defaults to configured database.")
 @handle_exceptions()
-def test_transform(model: str | None = None):
-    """Run tests on the transformed data.
+def test_dbt(
+    model: str | None = None, store_results: bool = False, project_dir: Path | None = None, db_url: str | None = None
+):
+    """Run DBT tests on the data models.
 
     If a model is specified, only tests for that model will be run.
     Otherwise, all tests will be run.
 
     Examples:
-        data-warehouse transforms test
-        data-warehouse transforms test fact_orders
+        data-warehouse transforms test-dbt
+        data-warehouse transforms test-dbt customer_model
+        data-warehouse transforms test-dbt --store-results
     """
+    # Save current directory to return to it later
+    original_dir = os.getcwd()
+
+    if project_dir is None:
+        project_dir = Path(original_dir) / "dbt_postgres"
+
+    # Change to the DBT project directory
+    os.chdir(project_dir)
+
+    # Build the DBT test command
+    cmd_parts = ["dbt", "test"]
     if model:
-        click.echo(f"Running tests for model: {model}")
-        cmd = f"dbt test --select {model}"
-    else:
-        click.echo("Running all tests")
-        cmd = "dbt test"
+        cmd_parts.extend(["--select", model])
 
-    # Log the command
-    logger.info(f"Running test command: {cmd}")
+    cmd = cmd_parts
+    click.echo(f"Running DBT tests: {' '.join(cmd)}")
 
-    # This will be implemented in future tasks
-    # For now, just show a placeholder message
-    click.echo("Test job started (placeholder for actual implementation)")
-    click.echo("Command that would run: " + cmd)
-    click.echo("Check logs for progress updates")
+    # Execute the DBT test command
+    success = False
+    try:
+        result = subprocess.run(cmd, check=True)
+        click.echo(f"DBT tests completed with exit code: {result.returncode}")
+        success = True
+    except subprocess.CalledProcessError as e:
+        click.echo(f"DBT tests failed with exit code: {e.returncode}")
+        if hasattr(e, "stderr") and e.stderr:
+            click.echo(f"Error: {e.stderr.decode('utf-8')}")
+    finally:
+        # Store test results if requested (regardless of success/failure)
+        if store_results:
+            target_path = os.path.join(project_dir, "target")
+            click.echo(f"{'Successfully completed' if success else 'Failed'} tests, logging results...")
+            log_results(target_path, db_url)
+        os.chdir(original_dir)
+
+
+def log_results(target_path: str | Path, db_url: str | None) -> None:
+    """Log DBT test results to the database"""
+    try:
+        # Verify target path exists
+        if not os.path.exists(target_path):
+            click.echo(f"Error: Target directory {target_path} not found")
+            return
+
+        # Import here to avoid circular imports
+        script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "log_dbt_test_results.py"
+
+        if not script_path.exists():
+            click.echo(f"Error: Results logging script not found at {script_path}")
+            return
+
+        cmd = ["python", str(script_path), "--target-dir", str(target_path), "--db-url", db_url or ""]
+        click.echo(f"Logging test results with command: {' '.join(cmd)}")
+
+        result = subprocess.run(cmd, check=True)
+        click.echo(f"Test results logging completed with exit code: {result.returncode}")
+    except subprocess.CalledProcessError as e:
+        click.echo(f"Failed to log test results: {e}")
+        if hasattr(e, "stderr") and e.stderr:
+            click.echo(f"Error details: {e.stderr.decode('utf-8')}")
+    except Exception as ex:
+        click.echo(f"Unexpected error logging test results: {ex}")
 
 
 @transforms.command("init-dbt-projects")
