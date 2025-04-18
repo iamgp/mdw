@@ -144,17 +144,29 @@ def log_results(target_path: str | Path, db_url: str | None = None) -> None:
             return
 
         # Import here to avoid circular imports
-        script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "log_dbt_test_results.py"
+        # Try multiple potential locations for the script
+        potential_script_paths = [
+            Path(__file__).parent.parent.parent.parent / "scripts" / "log_dbt_test_results.py",
+            Path.cwd() / "scripts" / "log_dbt_test_results.py"
+        ]
 
-        if not script_path.exists():
-            click.echo(f"Error: Results logging script not found at {script_path}")
+        script_path = None
+        for path in potential_script_paths:
+            if path.exists():
+                script_path = path
+                break
+
+        if script_path is None:
+            click.secho(
+                "Error: Could not find log_dbt_test_results.py script in any expected location",
+                fg="red"
+            )
             return
 
         # Handle None db_url by using empty string
         cmd = ["python", str(script_path), "--target-dir", str(target_path)]
         if db_url:
             cmd.extend(["--db-url", db_url])
-
         click.echo(f"Logging test results with command: {' '.join(cmd)}")
 
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
