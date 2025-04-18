@@ -1,5 +1,8 @@
 """Transformation-related CLI commands."""
 
+import subprocess
+from pathlib import Path
+
 import click
 from loguru import logger
 
@@ -91,6 +94,48 @@ def test_transform(model: str | None = None):
     click.echo("Test job started (placeholder for actual implementation)")
     click.echo("Command that would run: " + cmd)
     click.echo("Check logs for progress updates")
+
+
+@transforms.command("init-dbt-projects")
+@click.option("--postgres-name", default="dbt_postgres", help="Name for the Postgres DBT project directory.")
+@click.option("--duckdb-name", default="dbt_duckdb", help="Name for the DuckDB DBT project directory.")
+@click.option("--common-name", default="dbt_common", help="Name for the shared DBT macros/tests directory.")
+@handle_exceptions()
+def init_dbt_projects(postgres_name: str, duckdb_name: str, common_name: str):
+    """Initialize DBT projects for both Postgres and DuckDB, plus a shared directory for macros/tests."""
+    base_dir = Path.cwd()
+    postgres_dir = base_dir / postgres_name
+    duckdb_dir = base_dir / duckdb_name
+    common_dir = base_dir / common_name
+
+    for d in [postgres_dir, duckdb_dir, common_dir]:
+        if not d.exists():
+            d.mkdir(parents=True)
+            click.echo(f"Created directory: {d}")
+        else:
+            click.echo(f"Directory already exists: {d}")
+
+    # Initialize DBT projects if not already present
+    if not (postgres_dir / "dbt_project.yml").exists():
+        click.echo(f"Initializing DBT project in {postgres_dir} (Postgres)...")
+        subprocess.run(["dbt", "init", postgres_name], cwd=base_dir)
+    else:
+        click.echo(f"DBT project already exists in {postgres_dir}")
+
+    if not (duckdb_dir / "dbt_project.yml").exists():
+        click.echo(f"Initializing DBT project in {duckdb_dir} (DuckDB)...")
+        subprocess.run(["dbt", "init", duckdb_name], cwd=base_dir)
+    else:
+        click.echo(f"DBT project already exists in {duckdb_dir}")
+
+    # Create README in common_dir
+    readme_path = common_dir / "README.md"
+    if not readme_path.exists():
+        readme_path.write_text(
+            """# Shared DBT Macros and Tests\n\nPlace common macros and tests here. Symlink or copy into each DBT project as needed."""
+        )
+        click.echo(f"Created {readme_path}")
+    click.secho("DBT projects and shared directory initialized.", fg="green")
 
 
 if __name__ == "__main__":
