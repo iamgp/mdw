@@ -1,12 +1,14 @@
-from typing import Any
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
 
 
-class SourceBase:
+class SourceBase(Generic[T]):
     """
     Abstract base class for data source connectors.
     """
 
-    def extract(self) -> Any:
+    def extract(self) -> T:
         """Extract data from the source. Must be implemented by subclasses."""
         raise NotImplementedError("extract() must be implemented by the source connector.")
 

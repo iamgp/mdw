@@ -1,10 +1,9 @@
 import os
-from typing import Any
 
 from .source_base import SourceBase
 
 
-class ExampleFileSource(SourceBase):
+class ExampleFileSource(SourceBase[list[str]]):
     """
     Example file-based source connector for DLT ingestion.
     """
@@ -12,7 +11,7 @@ class ExampleFileSource(SourceBase):
     def __init__(self, file_path: str):
         self.file_path = file_path
 
-    def extract(self) -> Any:
+    def extract(self) -> list[str]:
         if not self.validate():
             raise FileNotFoundError(f"File not found: {self.file_path}")
         with open(self.file_path) as f:

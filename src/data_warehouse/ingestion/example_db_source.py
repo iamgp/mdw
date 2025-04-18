@@ -3,7 +3,7 @@ from typing import Any
 from .source_base import SourceBase
 
 
-class ExampleDBSource(SourceBase):
+class ExampleDBSource(SourceBase[list[dict[str, Any]]]):
     """
     Example database source connector for DLT ingestion with incremental loading and CDC simulation.
     """

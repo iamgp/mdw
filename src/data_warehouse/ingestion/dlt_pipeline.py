@@ -1,14 +1,18 @@
 import logging
 import time
-from typing import Any
+from collections.abc import Sized
+from typing import TypeVar, cast
 
 import dlt
 
 from .example_db_source import ExampleDBSource
 from .example_file_source import ExampleFileSource
+from .source_base import SourceBase
+
+T = TypeVar("T")
 
 
-def run_dlt_pipeline(source: Any, max_retries: int = 3, retry_delay: float = 2.0) -> None:
+def run_dlt_pipeline(source: SourceBase[T], max_retries: int = 3, retry_delay: float = 2.0) -> None:
     """
     Run the DLT pipeline for the given source connector with logging and retry logic.
     Args:
@@ -21,16 +25,15 @@ def run_dlt_pipeline(source: Any, max_retries: int = 3, retry_delay: float = 2.0
     logger = logging.getLogger("dlt_pipeline")
     logger.info(f"Starting DLT pipeline for source: {type(source).__name__}")
 
-    if source is None:
-        logger.error("Source connector must be provided.")
-        raise ValueError("Source connector must be provided.")
-
     attempt = 0
     while attempt < max_retries:
         try:
             pipeline = dlt.pipeline(pipeline_name="data_ingestion", destination="duckdb", dataset_name="raw_data")
-            data = source.extract()  # type: ignore[attr-defined]
-            logger.info(f"Extracted {len(data)} records from source.")
+            data: T = source.extract()
+            if hasattr(data, "__len__"):
+                logger.info(f"Extracted {len(cast(Sized, data))} records from source.")
+            else:
+                logger.warning("Extracted data does not support len().")
             pipeline.run(data, table_name="ingested_data", write_disposition="replace")
             logger.info("Pipeline run completed successfully.")
             return
