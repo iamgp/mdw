@@ -126,11 +126,20 @@ def test_dbt(
         os.chdir(original_dir)
 
 
-def log_results(target_path: str | Path, db_url: str | None) -> None:
-    """Log DBT test results to the database"""
+def log_results(target_path: str | Path, db_url: str | None = None) -> None:
+    """Log DBT test results to the database
+
+    Args:
+        target_path: Path to the DBT target directory containing run_results.json
+        db_url: Optional database URL for storing results, defaults to configured database if None
+    """
     try:
+        # Convert target_path to Path object if it's a string
+        if isinstance(target_path, str):
+            target_path = Path(target_path)
+
         # Verify target path exists
-        if not os.path.exists(target_path):
+        if not target_path.exists():
             click.echo(f"Error: Target directory {target_path} not found")
             return
 
@@ -141,15 +150,24 @@ def log_results(target_path: str | Path, db_url: str | None) -> None:
             click.echo(f"Error: Results logging script not found at {script_path}")
             return
 
-        cmd = ["python", str(script_path), "--target-dir", str(target_path), "--db-url", db_url or ""]
+        # Handle None db_url by using empty string
+        cmd = ["python", str(script_path), "--target-dir", str(target_path)]
+        if db_url:
+            cmd.extend(["--db-url", db_url])
+
         click.echo(f"Logging test results with command: {' '.join(cmd)}")
 
-        result = subprocess.run(cmd, check=True)
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         click.echo(f"Test results logging completed with exit code: {result.returncode}")
+
+        # Display output from the script for better visibility
+        if result.stdout:
+            click.echo(f"Output: {result.stdout}")
+
     except subprocess.CalledProcessError as e:
         click.echo(f"Failed to log test results: {e}")
         if hasattr(e, "stderr") and e.stderr:
-            click.echo(f"Error details: {e.stderr.decode('utf-8')}")
+            click.echo(f"Error details: {e.stderr}")
     except Exception as ex:
         click.echo(f"Unexpected error logging test results: {ex}")
 

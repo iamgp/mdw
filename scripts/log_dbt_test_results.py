@@ -20,7 +20,7 @@ def parse_dbt_results(results_path: Path) -> list[dict[str, Any]]:
         results_path: Path to the run_results.json file
 
     Returns:
-        List of test result dictionaries
+        List of test result dictionaries with extracted metadata
     """
     if not results_path.exists():
         logger.error(f"Results file not found: {results_path}")
@@ -127,7 +127,12 @@ def log_results_to_db(results: list[dict[str, Any]], db_url: str) -> None:
 )
 @handle_exceptions()
 def main(results_path: Path | None, target_dir: Path | None, db_target: str, db_url: str | None) -> None:
-    """Parse DBT test results and log them to the monitoring database."""
+    """Parse DBT test results and log them to the monitoring database.
+
+    This script reads the run_results.json file from a DBT run, extracts test metadata,
+    and logs the results to a monitoring database. It also checks for test failures
+    and logs a critical message if any are found.
+    """
     # Determine the results file path
     if results_path is None and target_dir is not None:
         results_path = target_dir / "run_results.json"
