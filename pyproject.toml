@@ -30,6 +30,7 @@ dependencies = [
     "mkdocstrings>=0.29.1",
     "mkdocstrings-python>=1.16.10",
     "pymdown-extensions>=10.14.3",
+    "pyright>=1.1.399",
 ]
 requires-python = ">=3.11"
 
@@ -82,7 +83,7 @@ select = [
     "UP", # pyupgrade
     "PT", # pytest style
 ]
-ignore = ["PT003"] # Ignore fixture scope warning
+ignore = ["PT003", "E501"] # Ignore fixture scope warning
 
 [tool.ruff.format]
 quote-style = "double"
