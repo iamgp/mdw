@@ -139,6 +139,15 @@ def main(results_path: Path, db_target: str):
     logger.info(f"Logging results to {db_target} database...")
     log_results_to_db(parsed_results, db_url)
 
+    # Check for failures and log a critical message if any exist
+    failures = [r for r in parsed_results if r.get("status") in ["fail", "error"]]
+    if failures:
+        logger.critical(
+            f"{len(failures)} DBT tests failed or errored. Check the 'monitoring.dbt_test_results' table or DBT artifacts for details."
+        )
+    else:
+        logger.info("All DBT tests passed or were skipped.")
+
 
 if __name__ == "__main__":
     main()
