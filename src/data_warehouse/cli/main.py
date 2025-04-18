@@ -3,6 +3,7 @@
 import click
 
 from data_warehouse import __version__
+from data_warehouse.cli.dagster import dagster
 from data_warehouse.cli.deploy import deploy
 from data_warehouse.cli.docs import docs
 from data_warehouse.cli.ingestion import ingestion
@@ -26,6 +27,17 @@ def cli(verbose: bool):
 
     This CLI provides commands for managing various aspects of the data warehouse,
     including storage setup, data ingestion, transformations, and monitoring.
+
+    Main command groups:
+
+    \b
+    * storage: Commands for managing storage backends
+    * ingestion: Commands for ingesting data from various sources
+    * transforms: Commands for running data transformations
+    * dagster: Commands for Dagster workflow orchestration
+    * deploy: Commands for deploying the data warehouse
+    * monitor: Commands for monitoring and alerting
+    * docs: Commands for generating documentation
     """
     # Initialize logger with appropriate verbosity
     setup_logger(verbose)
@@ -39,6 +51,7 @@ cli.add_command(transforms)
 cli.add_command(deploy)
 cli.add_command(monitor)
 cli.add_command(docs)
+cli.add_command(dagster)
 
 
 # Add top-level commands

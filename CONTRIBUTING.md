@@ -111,4 +111,29 @@ Thank you for your interest in contributing to the Modern Data Warehouse project
 - Join our community discussions
 - Contact maintainers for guidance
 
+## Working with Dagster
+
+Dagster is used to orchestrate the data pipeline. You can interact with Dagster in two ways:
+
+1. **Through the CLI**:
+
+   ```bash
+   # Start the Dagster UI
+   data-warehouse dagster ui
+
+   # List all assets
+   data-warehouse dagster list-assets
+
+   # Materialize specific assets
+   data-warehouse dagster materialize raw_sales transformed_sales
+   ```
+
+2. **Directly using Dagster commands**:
+   ```bash
+   # Start the Dagster UI
+   dagster dev
+   ```
+
+When adding new assets or modifying existing ones, be sure to test that they can be materialized both through the CLI and through the Dagster UI.
+
 Thank you for contributing!
