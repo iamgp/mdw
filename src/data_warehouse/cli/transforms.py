@@ -1,5 +1,6 @@
 """Transformation-related CLI commands."""
 
+import subprocess
 from pathlib import Path
 
 import click
@@ -176,6 +177,61 @@ test-paths: ['tests']
       threads: 4
       schema: main
 """)
+
+
+@transforms.command("log-results")
+@click.option(
+    "--results-path",
+    default=None,
+    help="Path to the DBT run_results.json file (default: attempts to find latest).",
+    type=click.Path(dir_okay=False, path_type=Path),
+)
+@click.option(
+    "--db-target",
+    type=click.Choice(["postgres", "duckdb"]),
+    default="postgres",
+    help="Target database to log results to.",
+)
+@click.option(
+    "--dbt-project",
+    type=click.Choice(["postgres", "duckdb"]),
+    default="postgres",
+    help="DBT project directory containing target/run_results.json (e.g., dbt_postgres or dbt_duckdb).",
+)
+def log_test_results(results_path: Path | None, db_target: str, dbt_project: str):
+    """Parse DBT test results from run_results.json and log them to the monitoring database."""
+    project_dir = Path.cwd() / f"dbt_{dbt_project}"
+    if results_path is None:
+        results_path = project_dir / "target" / "run_results.json"
+        if not results_path.exists():
+            click.secho(f"Error: Could not find default run_results.json at {results_path}", fg="red")
+            click.echo(
+                "Please run 'dbt test' in the appropriate project first or provide the path using --results-path."
+            )
+            return
+
+    if not results_path.exists():
+        click.secho(f"Error: Specified results file not found: {results_path}", fg="red")
+        return
+
+    # Construct the command to run the standalone script
+    cmd = [
+        "python",
+        str(Path.cwd() / "scripts" / "log_dbt_test_results.py"),
+        "--results-path",
+        str(results_path.resolve()),
+        "--db-target",
+        db_target,
+    ]
+    logger.info(f"Running command: {' '.join(cmd)}")
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        logger.info("Successfully logged DBT test results.")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error logging DBT test results: {e}")
+        logger.error(f"Stderr: {e.stderr}")
+        logger.error(f"Stdout: {e.stdout}")
+        click.secho("Error running results logging script. Check logs.", fg="red")
 
 
 if __name__ == "__main__":

@@ -36,9 +36,7 @@ def check_status():
         else:
             click.secho(f"❌ {component}: {status}", fg="red")
 
-    click.echo(
-        "\nFor more detailed component status, use the specific component commands:"
-    )
+    click.echo("\nFor more detailed component status, use the specific component commands:")
     click.echo("  data-warehouse storage status")
 
 
@@ -66,9 +64,7 @@ def check_status():
 )
 def view_logs(component: str, lines: int, level: str):
     """View logs for the data warehouse system or specific components."""
-    click.echo(
-        f"Showing {lines} most recent {level}+ logs for {component} component..."
-    )
+    click.echo(f"Showing {lines} most recent {level}+ logs for {component} component...")
 
     # This will be implemented in future tasks
     # For now, just show a placeholder message
@@ -136,12 +132,27 @@ def manage_alerts(configure: bool):
     """View and manage system alerts and notifications."""
     if configure:
         click.echo("Opening alert configuration...")
-        click.echo(
-            "Alert configuration functionality will be implemented in future tasks"
-        )
+        click.echo("Alert configuration functionality will be implemented in future tasks")
     else:
         click.echo("Showing recent alerts...")
         click.echo("No active alerts (placeholder message)")
+
+
+@monitor.command("test-dashboard")
+@click.option(
+    "--db-target",
+    type=click.Choice(["postgres", "duckdb"]),
+    default="postgres",
+    help="Database containing the test results.",
+)
+@click.option("--port", type=int, default=8050, help="Port to run the dashboard web server on.")
+def test_dashboard(db_target: str, port: int):
+    """(Placeholder) Launch a web dashboard to view DBT test results history."""
+    click.echo(f"Launching Test Results Dashboard (from {db_target} DB) on port {port}...")
+    click.echo("Dashboard functionality is a placeholder and will be implemented separately.")
+    click.echo("To view data, query the 'monitoring.dbt_test_results' table in your database.")
+    # Placeholder for launching a Dash/Streamlit/Flask app
+    # Example: subprocess.run(["streamlit", "run", "path/to/dashboard_app.py"])
 
 
 if __name__ == "__main__":
