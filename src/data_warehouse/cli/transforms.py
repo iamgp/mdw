@@ -1,6 +1,5 @@
 """Transformation-related CLI commands."""
 
-import subprocess
 from pathlib import Path
 
 import click
@@ -102,33 +101,45 @@ def test_transform(model: str | None = None):
 @click.option("--common-name", default="dbt_common", help="Name for the shared DBT macros/tests directory.")
 @handle_exceptions()
 def init_dbt_projects(postgres_name: str, duckdb_name: str, common_name: str):
-    """Initialize DBT projects for both Postgres and DuckDB, plus a shared directory for macros/tests."""
+    """Non-interactively create DBT projects for Postgres and DuckDB, plus a shared directory for macros/tests."""
     base_dir = Path.cwd()
-    postgres_dir = base_dir / postgres_name
-    duckdb_dir = base_dir / duckdb_name
+    projects = [(postgres_name, "postgres"), (duckdb_name, "duckdb")]
+    for project_name, adapter in projects:
+        project_dir = base_dir / project_name
+        if not project_dir.exists():
+            project_dir.mkdir(parents=True)
+            click.echo(f"Created directory: {project_dir}")
+        # Create minimal dbt_project.yml
+        dbt_project_yml = project_dir / "dbt_project.yml"
+        if not dbt_project_yml.exists():
+            dbt_project_yml.write_text(f"""
+name: '{project_name}'
+version: '1.0.0'
+config-version: 2
+profile: '{project_name}'
+
+model-paths: ['models']
+seed-paths: ['seeds']
+macro-paths: ['macros']
+test-paths: ['tests']
+
+# Add more config as needed
+""")
+            click.echo(f"Created {dbt_project_yml}")
+        # Create standard directories
+        for subdir in ["models", "macros", "tests", "seeds", "snapshots", "analyses"]:
+            d = project_dir / subdir
+            if not d.exists():
+                d.mkdir()
+        # Add README
+        readme = project_dir / "README.md"
+        if not readme.exists():
+            readme.write_text(f"# {project_name}\n\nDBT project for {adapter}.")
+    # Shared directory for macros/tests
     common_dir = base_dir / common_name
-
-    for d in [postgres_dir, duckdb_dir, common_dir]:
-        if not d.exists():
-            d.mkdir(parents=True)
-            click.echo(f"Created directory: {d}")
-        else:
-            click.echo(f"Directory already exists: {d}")
-
-    # Initialize DBT projects if not already present
-    if not (postgres_dir / "dbt_project.yml").exists():
-        click.echo(f"Initializing DBT project in {postgres_dir} (Postgres)...")
-        subprocess.run(["dbt", "init", postgres_name], cwd=base_dir)
-    else:
-        click.echo(f"DBT project already exists in {postgres_dir}")
-
-    if not (duckdb_dir / "dbt_project.yml").exists():
-        click.echo(f"Initializing DBT project in {duckdb_dir} (DuckDB)...")
-        subprocess.run(["dbt", "init", duckdb_name], cwd=base_dir)
-    else:
-        click.echo(f"DBT project already exists in {duckdb_dir}")
-
-    # Create README in common_dir
+    if not common_dir.exists():
+        common_dir.mkdir(parents=True)
+        click.echo(f"Created directory: {common_dir}")
     readme_path = common_dir / "README.md"
     if not readme_path.exists():
         readme_path.write_text(
@@ -136,6 +147,35 @@ def init_dbt_projects(postgres_name: str, duckdb_name: str, common_name: str):
         )
         click.echo(f"Created {readme_path}")
     click.secho("DBT projects and shared directory initialized.", fg="green")
+    # Output profiles.yml snippet
+    click.secho("\nAdd the following to your ~/.dbt/profiles.yml:\n", fg="yellow")
+    click.echo(f"""
+{postgres_name}:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      user: postgres
+      password: yourpassword
+      port: 5432
+      dbname: data_warehouse
+      schema: public
+      threads: 4
+      keepalives_idle: 0
+      connect_timeout: 10
+      search_path: public
+      sslmode: prefer
+
+{duckdb_name}:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ./data_warehouse.duckdb
+      threads: 4
+      schema: main
+""")
 
 
 if __name__ == "__main__":
