@@ -111,3 +111,55 @@ class TransformerError(DataWarehouseError):
 
 class LoaderError(DataWarehouseError):
     """Raised when there is an error in data loading."""
+
+
+class WorkflowError(DataWarehouseError):
+    """Exception raised for workflow execution errors."""
+
+    def __init__(self, message: str, cause: Exception | None = None):
+        """Initialize with an error message and optional cause.
+
+        Args:
+            message: Error message
+            cause: Optional exception that caused this error
+        """
+        super().__init__(f"Workflow error: {message}", cause)
+
+
+class WorkflowNotFoundError(WorkflowError):
+    """Exception raised when a specified workflow is not found."""
+
+    def __init__(self, workflow_id: str, cause: Exception | None = None):
+        """Initialize with a workflow ID and optional cause.
+
+        Args:
+            workflow_id: ID of the workflow that was not found
+            cause: Optional exception that caused this error
+        """
+        super().__init__(f"Workflow not found: {workflow_id}", cause)
+
+
+class WorkflowConfigurationError(WorkflowError):
+    """Exception raised for workflow configuration errors."""
+
+    def __init__(self, message: str, cause: Exception | None = None):
+        """Initialize with an error message and optional cause.
+
+        Args:
+            message: Error message
+            cause: Optional exception that caused this error
+        """
+        super().__init__(f"Workflow configuration error: {message}", cause)
+
+
+class WorkflowValidationError(WorkflowError):
+    """Exception raised for workflow validation errors."""
+
+    def __init__(self, message: str, cause: Exception | None = None):
+        """Initialize with an error message and optional cause.
+
+        Args:
+            message: Error message
+            cause: Optional exception that caused this error
+        """
+        super().__init__(f"Workflow validation error: {message}", cause)

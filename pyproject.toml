@@ -32,6 +32,8 @@ dependencies = [
     "pymdown-extensions>=10.14.3",
     "pyright>=1.1.399",
     "dagster-postgres>=0.26.10",
+    "watchdog>=5.0.3",
+    "ruff>=0.11.6",
 ]
 requires-python = ">=3.11"
 
@@ -43,7 +45,7 @@ dev = [
     "pytest-mock>=3.12.0",
     "pytest-xdist>=3.5.0",
     "pytest-benchmark>=4.0.0",
-    "ruff>=0.2.1",
+    "ruff>=0.11.6",
     "basedpyright>=0.1.0",
 ]
 
@@ -63,7 +65,7 @@ envs.default.dependencies = [
     "pytest-mock",
     "pytest-xdist",
     "pytest-benchmark",
-    "ruff",
+    "ruff>=0.11.6",
     "basedpyright",
     "pytest-dev.types>=0.3.1",
     "types-pytest>=7.4.4",

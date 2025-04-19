@@ -492,8 +492,10 @@ dependencies = [
     { name = "pyright" },
     { name = "python-dotenv" },
     { name = "rich" },
+    { name = "ruff" },
     { name = "strawberry-graphql" },
     { name = "uvicorn", extra = ["standard"] },
+    { name = "watchdog" },
 ]
 
 [package.optional-dependencies]
@@ -543,9 +545,11 @@ requires-dist = [
     { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.5.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "rich", specifier = ">=13.7.0" },
+    { name = "ruff", specifier = ">=0.11.5" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.2.1" },
     { name = "strawberry-graphql", specifier = ">=0.220.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.27.1" },
+    { name = "watchdog", specifier = ">=5.0.3" },
 ]
 provides-extras = ["dev"]
 
