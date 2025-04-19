@@ -84,7 +84,7 @@ select = [
     "UP", # pyupgrade
     "PT", # pytest style
 ]
-ignore = ["PT003", "E501"] # Ignore fixture scope warning
+ignore = ["PT003", "E501", "C901"] # Ignore fixture scope warning
 
 [tool.ruff.format]
 quote-style = "double"
