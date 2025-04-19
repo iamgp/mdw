@@ -143,38 +143,14 @@ def log_results(target_path: str | Path, db_url: str | None = None) -> None:
             click.echo(f"Error: Target directory {target_path} not found")
             return
 
-        # Import here to avoid circular imports
-        # Try multiple potential locations for the script
-        potential_script_paths = [
-            Path(__file__).parent.parent.parent.parent / "scripts" / "log_dbt_test_results.py",
-            Path.cwd() / "scripts" / "log_dbt_test_results.py"
-        ]
-
-        script_path = None
-        for path in potential_script_paths:
-            if path.exists():
-                script_path = path
-                break
-
+        # Find the script path
+        script_path = _find_script_path()
         if script_path is None:
-            click.secho(
-                "Error: Could not find log_dbt_test_results.py script in any expected location",
-                fg="red"
-            )
+            click.secho("Error: Could not find log_dbt_test_results.py script in any expected location", fg="red")
             return
 
-        # Handle None db_url by using empty string
-        cmd = ["python", str(script_path), "--target-dir", str(target_path)]
-        if db_url:
-            cmd.extend(["--db-url", db_url])
-        click.echo(f"Logging test results with command: {' '.join(cmd)}")
-
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        click.echo(f"Test results logging completed with exit code: {result.returncode}")
-
-        # Display output from the script for better visibility
-        if result.stdout:
-            click.echo(f"Output: {result.stdout}")
+        # Build and execute the command
+        _execute_logging_command(script_path, target_path, db_url)
 
     except subprocess.CalledProcessError as e:
         click.echo(f"Failed to log test results: {e}")
@@ -182,6 +158,48 @@ def log_results(target_path: str | Path, db_url: str | None = None) -> None:
             click.echo(f"Error details: {e.stderr}")
     except Exception as ex:
         click.echo(f"Unexpected error logging test results: {ex}")
+
+
+def _find_script_path() -> Path | None:
+    """Find the path to the log_dbt_test_results.py script.
+
+    Returns:
+        Path to the script if found, None otherwise
+    """
+    # Import here to avoid circular imports
+    # Try multiple potential locations for the script
+    potential_script_paths = [
+        Path(__file__).parent.parent.parent.parent / "scripts" / "log_dbt_test_results.py",
+        Path.cwd() / "scripts" / "log_dbt_test_results.py",
+    ]
+
+    for path in potential_script_paths:
+        if path.exists():
+            return path
+
+    return None
+
+
+def _execute_logging_command(script_path: Path, target_path: Path, db_url: str | None) -> None:
+    """Execute the log_dbt_test_results.py script.
+
+    Args:
+        script_path: Path to the script
+        target_path: Path to the DBT target directory
+        db_url: Optional database URL
+    """
+    # Handle None db_url by using empty string
+    cmd = ["python", str(script_path), "--target-dir", str(target_path)]
+    if db_url:
+        cmd.extend(["--db-url", db_url])
+    click.echo(f"Logging test results with command: {' '.join(cmd)}")
+
+    result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    click.echo(f"Test results logging completed with exit code: {result.returncode}")
+
+    # Display output from the script for better visibility
+    if result.stdout:
+        click.echo(f"Output: {result.stdout}")
 
 
 @transforms.command("init-dbt-projects")

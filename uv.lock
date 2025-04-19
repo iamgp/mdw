@@ -418,6 +418,19 @@ wheels = [
 ]
 
 [[package]]
+name = "dagster-postgres"
+version = "0.26.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dagster" },
+    { name = "psycopg2-binary" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2d/51/ee2ff4203bde1009f0465bf77a22ab6ee0fdbbd350d5e777b3e41f29d56c/dagster-postgres-0.26.10.tar.gz", hash = "sha256:94dc9744570c3ce93ee3e3ffd7ded168ea26c42bcf584d6798c032e6086f72fe", size = 15407 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ae/f7/fa3d32c1b7226928ff149d064460192d6654bdca5e698c9cf30c35f3c18c/dagster_postgres-0.26.10-py3-none-any.whl", hash = "sha256:ca0b9f30489fe01fb73c8c9c45e1a5992c0aa5b5529839c20436aec37ae031fa", size = 21579 },
+]
+
+[[package]]
 name = "dagster-shared"
 version = "0.26.10"
 source = { registry = "https://pypi.org/simple" }
@@ -456,6 +469,7 @@ dependencies = [
     { name = "click" },
     { name = "dagster" },
     { name = "dagster-graphql" },
+    { name = "dagster-postgres" },
     { name = "dagster-webserver" },
     { name = "dbt-core" },
     { name = "dbt-duckdb" },
@@ -500,6 +514,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
     { name = "dagster", specifier = ">=1.6.7" },
     { name = "dagster-graphql", specifier = ">=1.6.7" },
+    { name = "dagster-postgres", specifier = ">=0.26.10" },
     { name = "dagster-webserver", specifier = ">=1.6.7" },
     { name = "dbt-core", specifier = ">=1.7.8" },
     { name = "dbt-duckdb", specifier = ">=1.7.8" },

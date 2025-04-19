@@ -1,48 +1,60 @@
-# Modern Data Warehouse
+# Data Warehouse
 
-A modern data warehouse implementation using DuckDB, PostgreSQL, DBT, and Dagster.
+A modern data warehouse implementation using Python, Dagster, PostgreSQL, and DuckDB.
 
-## Features
+## Overview
 
-- Hybrid storage approach using DuckDB and PostgreSQL
-- ETL pipeline framework with modular components
-- Data transformation using DBT
-- Workflow orchestration with Dagster
-- GraphQL API for data access
-- CLI tools for data management
-- Comprehensive logging and monitoring
-- Type-safe implementation with Python 3.11+
+This project implements a modular, scalable data warehouse with:
+
+- **Extraction** from multiple sources (APIs, files)
+- **Loading** into PostgreSQL (raw layer)
+- **Transformation** into standardized formats
+- **Data marts** in DuckDB for analytics
+- **Orchestration** using Dagster
+
+The pipeline follows ELT (Extract, Load, Transform) principles, with a layered approach:
+
+1. **Raw Layer** (PostgreSQL): Stores raw data from sources without modification
+2. **Transformed Layer** (PostgreSQL): Cleaned, validated, and standardized data
+3. **Mart Layer** (DuckDB): Analytics-ready aggregated data for specific domains
 
 ## Project Structure
 
 ```
-data_warehouse/
-├── src/
-│   └── data_warehouse/
-│       ├── api/          # FastAPI/GraphQL endpoints
-│       ├── cli/          # CLI commands
-│       ├── config/       # Configuration management
-│       ├── core/         # Core components and base classes
-│       ├── extractors/   # Data extraction components
-│       ├── loaders/      # Data loading components
-│       ├── transformers/ # Data transformation components
-│       └── utils/        # Utility functions
-├── tests/
-│   ├── unit/            # Unit tests
-│   └── integration/     # Integration tests
-├── docs/                # Documentation
-├── dbt/                 # DBT project
-└── dagster_home/        # Dagster configuration
+src/data_warehouse/
+├── api/                  # API for accessing data warehouse
+├── cli/                  # Command-line interface
+├── config/               # Configuration management
+├── core/                 # Core domain logic
+├── ingestion/            # Data ingestion utilities
+├── orchestration/        # Pipeline orchestration
+│   └── dagster/          # Dagster assets and resources
+│       ├── assets/       # Data assets
+│       │   ├── raw_data.py       # Raw data extraction
+│       │   ├── transformed_data.py # Data transformation
+│       │   └── marts.py         # Data mart creation
+│       └── resources/    # Resource definitions
+│           ├── database.py      # Database connections
+│           └── io_managers.py   # I/O managers
+├── services/             # Service interfaces
+├── sources/              # Source data clients
+│   ├── api_client.py     # API client for external data
+│   └── file_client.py    # File client for CSV/Excel data
+├── utils/                # Utility functions
+│   ├── transformations.py # Data transformation utilities
+│   └── error_handler.py  # Error handling utilities
+└── main.py               # Application entry point
 ```
 
-## Requirements
+## Setup
 
-- Python 3.11 or higher
-- PostgreSQL 15 or higher
-- Poetry for dependency management
-- Docker (optional, for containerized deployment)
+### Prerequisites
 
-## Installation
+- Python 3.10+
+- PostgreSQL
+- DuckDB
+
+### Installation
 
 1. Clone the repository:
 
@@ -51,7 +63,7 @@ data_warehouse/
    cd data_warehouse
    ```
 
-2. Create and activate a virtual environment:
+2. Create a virtual environment:
 
    ```bash
    python -m venv .venv
@@ -61,100 +73,112 @@ data_warehouse/
 3. Install dependencies:
 
    ```bash
-   pip install -e ".[dev]"
+   pip install -e .
    ```
 
-4. Install pre-commit hooks:
-
+4. Set up environment variables:
    ```bash
-   pre-commit install
+   export POSTGRES_CONNECTION_STRING="postgresql://user:password@localhost:5432/data_warehouse"
+   export DUCKDB_DATABASE_PATH="/path/to/analytics.duckdb"
+   export API_BASE_URL="https://api.example.com/v1"
+   export DATA_FILES_DIRECTORY="/path/to/data/files"
    ```
 
-5. Copy the example environment file and update it:
-   ```bash
-   cp .env.example .env
-   ```
+## Running the Pipeline
 
-## Environment Variables
+### Using the CLI
 
-The following environment variables can be configured:
+The data warehouse comes with a comprehensive CLI that makes it easy to manage all aspects of the system:
 
-- `POSTGRES_HOST`: PostgreSQL host (default: localhost)
-- `POSTGRES_PORT`: PostgreSQL port (default: 5432)
-- `POSTGRES_USER`: PostgreSQL username (default: postgres)
-- `POSTGRES_PASSWORD`: PostgreSQL password
-- `POSTGRES_DB`: PostgreSQL database name (default: data_warehouse)
-- `MINIO_HOST`: MinIO host (default: localhost)
-- `MINIO_PORT`: MinIO port (default: 9000)
-- `MINIO_ACCESS_KEY`: MinIO access key
-- `MINIO_SECRET_KEY`: MinIO secret key
-- `DATA_WAREHOUSE_ROOT`: (Optional) Absolute path to the project root directory. If set, this overrides auto-detection.
-  - Resolution order: (1) If DATA_WAREHOUSE_ROOT is set, it is used as the project root. (2) Otherwise, the root is auto-detected as three levels up from the config file location.
-  - Recommended to set in containerized or production environments for robust path resolution.
-- `LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+```bash
+# Show available commands
+data-warehouse --help
+
+# Get information about the current configuration
+data-warehouse info
+
+# Run storage commands
+data-warehouse storage --help
+
+# Run Dagster commands
+data-warehouse dagster --help
+```
+
+#### Dagster CLI Commands
+
+Interact with Dagster directly from the command line:
+
+```bash
+# Start the Dagster UI
+data-warehouse dagster ui
+
+# Start the Dagster daemon (for schedules and sensors)
+data-warehouse dagster daemon
+
+# List all available assets
+data-warehouse dagster list-assets
+
+# Materialize specific assets
+data-warehouse dagster materialize raw_sales transformed_sales
+
+# Materialize all assets
+data-warehouse dagster materialize --all
+
+# Run a specific job
+data-warehouse dagster run daily_refresh
+```
+
+### Start Dagster UI Directly
+
+You can also start Dagster directly:
+
+```bash
+dagster dev
+```
+
+Then open http://localhost:3000 in your browser.
+
+### Run a Full Warehouse Update
+
+From the Dagster UI, you can:
+
+1. Materialize all assets
+2. Run individual asset groups
+3. Schedule regular updates
+
+## Data Flow
+
+1. **Extraction**:
+
+   - Raw data extracted from APIs and files
+   - Loaded into PostgreSQL without transformation
+
+2. **Transformation**:
+
+   - Data cleaned and standardized
+   - Business rules applied
+   - Quality checks performed
+
+3. **Data Marts**:
+   - Aggregated views created for analysis
+   - Optimized for query performance
+   - Segmented by business domain
 
 ## Development
 
-1. Ensure PostgreSQL is running and accessible with the credentials in your `.env` file.
+### Adding a New Data Source
 
-2. Run the tests:
+1. Create a client in `sources/` if needed
+2. Add raw assets in `orchestration/dagster/assets/raw_data.py`
+3. Add transformations in `utils/transformations.py`
+4. Add transformed assets in `orchestration/dagster/assets/transformed_data.py`
+5. Update data marts in `orchestration/dagster/assets/marts.py`
 
-   ```bash
-   pytest
-   ```
-
-3. Start the API server:
-
-   ```bash
-   uvicorn data_warehouse.api.main:app --reload
-   ```
-
-4. Start the Dagster UI:
-   ```bash
-   dagster dev
-   ```
-
-## Usage
-
-### CLI Commands
-
-The package provides several CLI commands for data management:
+### Running Tests
 
 ```bash
-# Initialize the data warehouse
-dw init
-
-# Run a data pipeline
-dw pipeline run --name my_pipeline
-
-# Query the warehouse
-dw query "SELECT * FROM my_table"
+pytest
 ```
-
-### API Endpoints
-
-The GraphQL API is available at `http://localhost:8000/graphql` and provides:
-
-- Data querying
-- Pipeline management
-- Metadata access
-- Schema information
-
-### DBT Models
-
-DBT models are organized in the `dbt/` directory:
-
-- `models/staging/`: Initial data transformations
-- `models/intermediate/`: Business logic layer
-- `models/marts/`: Final presentation layer
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
 
 ## License
 

@@ -1,0 +1,5 @@
+# Dagster workspace configuration
+load_from:
+  - python_module:
+      name: src.data_warehouse.orchestration.dagster
+      attribute: data_warehouse_repository
