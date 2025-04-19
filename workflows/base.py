@@ -9,6 +9,10 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Generic, TypeVar
 
+from workflows.exceptions import (
+    PipelineError,
+)
+
 # Define type variables for input and output types
 InputType = TypeVar("InputType")
 OutputType = TypeVar("OutputType")
