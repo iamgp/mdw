@@ -6,7 +6,7 @@ and load it into the raw layer of the data warehouse.
 """
 
 import pandas as pd
-from dagster import AssetExecutionContext, asset
+from dagster import AssetExecutionContext, asset  # type: ignore
 
 from src.data_warehouse.sources.api_client import APIClient
 from src.data_warehouse.sources.file_client import FileClient

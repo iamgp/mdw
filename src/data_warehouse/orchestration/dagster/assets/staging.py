@@ -5,7 +5,7 @@ This module defines assets for transforming raw data into a staging format.
 """
 
 import pandas as pd
-from dagster import AssetExecutionContext, asset
+from dagster import AssetExecutionContext, asset  # type: ignore
 
 from src.data_warehouse.orchestration.dagster.resources.database import PostgresResource
 

@@ -5,12 +5,12 @@ This module defines assets for ingesting raw data into the data warehouse.
 """
 
 import pandas as pd
-from dagster import AssetExecutionContext, asset
+from dagster import AssetExecutionContext, asset  # type: ignore
 
 from src.data_warehouse.orchestration.dagster.resources.database import PostgresResource
 
 
-@asset(
+@asset(  # type: ignore
     group_name="raw",
     io_manager_key="postgres_io_manager",
     required_resource_keys={"postgres"},

@@ -6,8 +6,9 @@ validated, and enriched forms for the transformed layer of the data warehouse.
 """
 
 import pandas as pd
-from dagster import AssetExecutionContext, AssetIn, asset
+from dagster import AssetExecutionContext, AssetIn, asset  # type: ignore
 
+from src.data_warehouse.orchestration.dagster.resources.database import PostgresResource
 from src.data_warehouse.utils.transformations import (
     clean_customer_data,
     clean_order_data,
@@ -208,3 +209,19 @@ def inventory(
     context.log.info(f"Transformation complete: {final_count} records processed")
 
     return transformed_df
+
+
+@asset(  # type: ignore
+    group_name="transformed",
+    io_manager_key="postgres_io_manager",
+    required_resource_keys={"postgres"},
+    description="Transformed data layer",
+)
+def transformed_data(context: AssetExecutionContext, postgres: PostgresResource) -> pd.DataFrame:
+    """
+    Transform staging data into the transformed layer.
+
+    This is a sample asset that demonstrates the transformed data layer using Dagster.
+    In a real implementation, this would apply business logic and transformations.
+    """
+    # ... rest of the existing code ...

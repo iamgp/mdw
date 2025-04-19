@@ -5,7 +5,7 @@ This module defines assets for final data warehouse models and aggregations.
 """
 
 import pandas as pd
-from dagster import AssetExecutionContext, asset
+from dagster import AssetExecutionContext, asset  # type: ignore
 
 from src.data_warehouse.orchestration.dagster.resources.database import DuckDBResource
 
