@@ -112,7 +112,7 @@ class TemplateParser:
             # Determine file format based on extension
             ext = os.path.splitext(file_path)[1].lower()
 
-            with open(file_path) as f:
+            with open(file_path, encoding="utf-8") as f:
                 if ext in [".yaml", ".yml"]:
                     return yaml.safe_load(f)
                 elif ext == ".json":
@@ -365,9 +365,9 @@ class TemplateGenerator:
             # Make sure the directory exists
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            with open(file_path, "w") as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 if format.lower() == "yaml":
-                    yaml.dump(template, f, default_flow_style=False)
+                    yaml.safe_dump(template, f, default_flow_style=False, sort_keys=False)
                 elif format.lower() == "json":
                     json.dump(template, f, indent=2)
                 else:

@@ -299,7 +299,7 @@ class DocsGenerator:
         for name, extractor in extractors.items():
             doc = self._generate_component_doc(name, extractor, "extractor")
             file_path = os.path.join(self.output_dir, f"{name.lower()}.md")
-            with open(file_path, "w") as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(doc)
             logger.info(f"Generated documentation for extractor: {name}")
 
@@ -307,7 +307,7 @@ class DocsGenerator:
         for name, transformer in transformers.items():
             doc = self._generate_component_doc(name, transformer, "transformer")
             file_path = os.path.join(self.output_dir, f"{name.lower()}.md")
-            with open(file_path, "w") as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(doc)
             logger.info(f"Generated documentation for transformer: {name}")
 
@@ -315,7 +315,7 @@ class DocsGenerator:
         for name, loader in loaders.items():
             doc = self._generate_component_doc(name, loader, "loader")
             file_path = os.path.join(self.output_dir, f"{name.lower()}.md")
-            with open(file_path, "w") as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(doc)
             logger.info(f"Generated documentation for loader: {name}")
 
@@ -323,14 +323,14 @@ class DocsGenerator:
         for name, pipeline in pipelines.items():
             doc = self._generate_pipeline_doc(name, pipeline)
             file_path = os.path.join(self.output_dir, f"{name.lower()}.md")
-            with open(file_path, "w") as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(doc)
             logger.info(f"Generated documentation for pipeline: {name}")
 
         # Generate index file
         index_doc = self._generate_index_doc(extractors, transformers, loaders, pipelines)
         index_path = os.path.join(self.output_dir, "index.md")
-        with open(index_path, "w") as f:
+        with open(index_path, "w", encoding="utf-8") as f:
             f.write(index_doc)
         logger.info(f"Generated index documentation at: {index_path}")
 
@@ -356,7 +356,7 @@ class DocsGenerator:
             # Generate documentation
             doc = self._generate_pipeline_doc(pipeline_name, pipeline)
             file_path = os.path.join(self.output_dir, f"{pipeline_name.lower()}.md")
-            with open(file_path, "w") as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(doc)
             logger.info(f"Generated documentation for pipeline: {pipeline_name}")
             return file_path

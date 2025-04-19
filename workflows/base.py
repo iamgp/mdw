@@ -262,34 +262,48 @@ class Pipeline:
         Raises:
             PipelineError: If any step in the pipeline fails
         """
-        # Extract
-        data = self.extractor.extract()
-        self.extractor.last_run_time = datetime.now()
+        try:
+            # Validate extractor source
+            if not self.extractor.validate_source():
+                raise PipelineError(f"Extractor source for '{self.name}' is invalid")
 
-        # Transform
-        for transformer in self.transformers:
-            # Validate input before transformation
-            transformer.validate_input(data)
+            # Extract
+            data = self.extractor.extract()
+            self.extractor.last_run_time = datetime.now()
 
-            # Transform the data
-            data = transformer.transform(data)
+            # Transform
+            for transformer in self.transformers:
+                # Validate input before transformation
+                transformer.validate_input(data)
 
-            # Validate output after transformation
-            transformer.validate_output(data)
+                # Transform the data
+                data = transformer.transform(data)
 
-            # Update last run time
-            transformer.last_run_time = datetime.now()
+                # Validate output after transformation
+                transformer.validate_output(data)
 
-        # Load (if a loader is provided)
-        if self.loader:
-            self.loader.load(data)
-            self.loader.last_run_time = datetime.now()
+                # Update last run time
+                transformer.last_run_time = datetime.now()
 
-        # Update pipeline's last run time
-        self.last_run_time = datetime.now()
+            # Load (if a loader is provided)
+            if self.loader:
+                # Validate loader destination
+                if not self.loader.validate_destination():
+                    raise PipelineError(f"Loader destination for '{self.name}' is invalid")
 
-        # Return the final data
-        return data
+                self.loader.load(data)
+                self.loader.last_run_time = datetime.now()
+
+            # Update pipeline's last run time
+            self.last_run_time = datetime.now()
+
+            # Return the final data
+            return data
+        except Exception as e:
+            # Wrap any exception in a PipelineError
+            if not isinstance(e, PipelineError):
+                raise PipelineError(f"Pipeline '{self.name}' execution failed: {str(e)}") from e
+            raise
 
     def get_metadata(self) -> MetadataType:
         """

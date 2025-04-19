@@ -33,7 +33,7 @@ class TestTemplateParser(unittest.TestCase):
     def _create_temp_file(self, content: dict[str, Any], extension: str) -> str:
         """Create a temporary file with the given content and extension."""
         file_path = os.path.join(self.temp_dir.name, f"test_template.{extension}")
-        with open(file_path, "w") as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             if extension in ["yaml", "yml"]:
                 yaml.dump(content, f)
             elif extension == "json":
@@ -346,7 +346,7 @@ class TestTemplateGenerator(unittest.TestCase):
         assert os.path.exists(file_path)
 
         # Check that the file contains the expected content
-        with open(file_path) as f:
+        with open(file_path, encoding="utf-8") as f:
             loaded_template = yaml.safe_load(f)
         assert loaded_template["version"] == "1.0.0"
         assert loaded_template["pipelines"][0]["name"] == "test_pipeline"
@@ -373,7 +373,7 @@ class TestTemplateGenerator(unittest.TestCase):
         assert os.path.exists(file_path)
 
         # Check that the file contains the expected content
-        with open(file_path) as f:
+        with open(file_path, encoding="utf-8") as f:
             loaded_template = json.load(f)
         assert loaded_template["version"] == "1.0.0"
         assert loaded_template["pipelines"][0]["name"] == "test_pipeline"
@@ -388,7 +388,7 @@ class TestTemplateGenerator(unittest.TestCase):
         assert os.path.exists(file_path)
 
         # Check that the file contains the expected content
-        with open(file_path) as f:
+        with open(file_path, encoding="utf-8") as f:
             template = yaml.safe_load(f)
         assert "version" in template
         assert "extractors" in template

@@ -160,7 +160,7 @@ class TestWorkflowWatcherFileEvents(unittest.TestCase):
         """Test that the watcher detects when a file is created."""
         # Create a test file
         test_file = os.path.join(self.test_dir, "extractors", "test_extractor.py")
-        with open(test_file, "w") as f:
+        with open(test_file, "w", encoding="utf-8") as f:
             f.write("# Test file")
 
         # Wait for the event to be processed
@@ -173,7 +173,7 @@ class TestWorkflowWatcherFileEvents(unittest.TestCase):
         """Test that the watcher detects when a file is modified."""
         # Create a test file
         test_file = os.path.join(self.test_dir, "extractors", "test_extractor2.py")
-        with open(test_file, "w") as f:
+        with open(test_file, "w", encoding="utf-8") as f:
             f.write("# Test file")
 
         # Wait for the event to be processed
@@ -183,7 +183,7 @@ class TestWorkflowWatcherFileEvents(unittest.TestCase):
         self.reloaded_files.clear()
 
         # Modify the file
-        with open(test_file, "a") as f:
+        with open(test_file, "a", encoding="utf-8") as f:
             f.write("\n# Modified")
 
         # Wait for the event to be processed
