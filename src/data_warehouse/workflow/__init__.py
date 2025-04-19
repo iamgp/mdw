@@ -8,6 +8,18 @@ workflow discovery.
 
 __version__ = "0.1.0"
 
+# Define explicit public interface to control imports
+__all__ = [
+    "WorkflowBase",
+    "WorkflowRegistry",
+    "WorkflowExecutor",
+    "WorkflowValidator",
+    "WorkflowMonitor",
+    "ExtractorBase",
+    "TransformerBase",
+    "LoaderBase",
+]
+
 from data_warehouse.workflow.base import (  # noqa
     WorkflowBase,
     WorkflowRegistry,

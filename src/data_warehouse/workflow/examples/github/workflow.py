@@ -141,10 +141,27 @@ class GitHubWorkflow(WorkflowBase):
         """Validate the workflow configuration.
 
         Raises:
-            ValueError: If the configuration is invalid
+            WorkflowError: If the configuration is invalid
         """
         required_fields = ["entity_type", "entity_name", "endpoint"]
+        missing_fields = []
 
         for field in required_fields:
             if field not in self.config:
-                self.config[field] = None  # Will use defaults from __init__
+                missing_fields.append(field)
+                # Set default values that will be used in __init__
+                self.config[field] = None
+
+        # Report all missing fields at once with clear error message
+        if missing_fields:
+            logger.warning(f"Missing required configuration fields: {', '.join(missing_fields)}. Using defaults.")
+
+        # Validate credential presence if token is required
+        if not self.config.get("credentials", {}).get("token"):
+            logger.warning("No GitHub API token provided in credentials. Rate limits may apply.")
+
+        # Validate loader configuration
+        loader_type = self.config.get("loader_type", "database")
+        if loader_type not in ["database", "file"]:
+            logger.warning(f"Invalid loader_type '{loader_type}'. Using 'database' as default.")
+            self.config["loader_type"] = "database"

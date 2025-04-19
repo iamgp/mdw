@@ -18,6 +18,9 @@ from data_warehouse.workflow.etl import ExtractorBase
 class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
     """Extractor for Nightscout API data."""
 
+    # Default API limit for Nightscout record count
+    DEFAULT_RECORD_LIMIT = 10000
+
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         """Initialize the Nightscout extractor.
 
@@ -57,11 +60,16 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days_to_extract)
 
+        # Get the configurable record limit (default: 10000)
+        record_limit = context.config.get("record_limit", self.DEFAULT_RECORD_LIMIT)
+
         # Format dates for API
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
 
-        logger.info(f"Extracting Nightscout data from {start_date_str} to {end_date_str}")
+        logger.info(
+            f"Extracting Nightscout data from {start_date_str} to {end_date_str} (limit: {record_limit} records)"
+        )
 
         # Prepare the result container
         result = {
@@ -73,12 +81,12 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
 
         try:
             # Extract entries (CGM data)
-            entries = self._extract_entries(nightscout_url, start_date, end_date)
+            entries = self._extract_entries(nightscout_url, start_date, end_date, record_limit)
             result["entries"] = entries
             logger.info(f"Extracted {len(entries)} CGM entries")
 
             # Extract treatments
-            treatments = self._extract_treatments(nightscout_url, start_date, end_date)
+            treatments = self._extract_treatments(nightscout_url, start_date, end_date, record_limit)
             result["treatments"] = treatments
             logger.info(f"Extracted {len(treatments)} treatments")
 
@@ -88,7 +96,7 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
             logger.info(f"Extracted {len(profiles)} profiles")
 
             # Extract device status
-            devicestatus = self._extract_devicestatus(nightscout_url, start_date, end_date)
+            devicestatus = self._extract_devicestatus(nightscout_url, start_date, end_date, record_limit)
             result["devicestatus"] = devicestatus
             logger.info(f"Extracted {len(devicestatus)} device statuses")
 
@@ -104,13 +112,16 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
             logger.error(error_msg)
             raise ExtractorError(error_msg) from e
 
-    def _extract_entries(self, nightscout_url: str, start_date: datetime, end_date: datetime) -> list[dict[str, Any]]:
+    def _extract_entries(
+        self, nightscout_url: str, start_date: datetime, end_date: datetime, record_limit: int
+    ) -> list[dict[str, Any]]:
         """Extract CGM entries from Nightscout.
 
         Args:
             nightscout_url: The Nightscout instance URL
             start_date: Start date for extraction
             end_date: End date for extraction
+            record_limit: Maximum number of records to retrieve
 
         Returns:
             List of CGM entries
@@ -127,17 +138,17 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
         params = {
             "find[date][$gte]": start_timestamp,
             "find[date][$lte]": end_timestamp,
-            "count": 10000,  # Adjust based on expected volume
+            "count": record_limit,
         }
 
-        logger.debug(f"Requesting entries from {entries_url}")
+        logger.debug(f"Requesting entries from {entries_url} (limit: {record_limit})")
         response = requests.get(entries_url, params=params, headers=self.headers)
         response.raise_for_status()
 
         return response.json()
 
     def _extract_treatments(
-        self, nightscout_url: str, start_date: datetime, end_date: datetime
+        self, nightscout_url: str, start_date: datetime, end_date: datetime, record_limit: int
     ) -> list[dict[str, Any]]:
         """Extract treatments from Nightscout.
 
@@ -145,6 +156,7 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
             nightscout_url: The Nightscout instance URL
             start_date: Start date for extraction
             end_date: End date for extraction
+            record_limit: Maximum number of records to retrieve
 
         Returns:
             List of treatments
@@ -161,10 +173,10 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
         params = {
             "find[created_at][$gte]": start_timestamp,
             "find[created_at][$lte]": end_timestamp,
-            "count": 10000,  # Adjust based on expected volume
+            "count": record_limit,
         }
 
-        logger.debug(f"Requesting treatments from {treatments_url}")
+        logger.debug(f"Requesting treatments from {treatments_url} (limit: {record_limit})")
         response = requests.get(treatments_url, params=params, headers=self.headers)
         response.raise_for_status()
 
@@ -192,7 +204,7 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
         return response.json()
 
     def _extract_devicestatus(
-        self, nightscout_url: str, start_date: datetime, end_date: datetime
+        self, nightscout_url: str, start_date: datetime, end_date: datetime, record_limit: int
     ) -> list[dict[str, Any]]:
         """Extract device status from Nightscout.
 
@@ -200,6 +212,7 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
             nightscout_url: The Nightscout instance URL
             start_date: Start date for extraction
             end_date: End date for extraction
+            record_limit: Maximum number of records to retrieve
 
         Returns:
             List of device statuses
@@ -216,10 +229,10 @@ class NightscoutExtractor(ExtractorBase[dict[str, Any]]):
         params = {
             "find[created_at][$gte]": start_timestamp,
             "find[created_at][$lte]": end_timestamp,
-            "count": 10000,  # Adjust based on expected volume
+            "count": record_limit,
         }
 
-        logger.debug(f"Requesting device status from {devicestatus_url}")
+        logger.debug(f"Requesting device status from {devicestatus_url} (limit: {record_limit})")
         response = requests.get(devicestatus_url, params=params, headers=self.headers)
         response.raise_for_status()
 

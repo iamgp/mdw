@@ -42,6 +42,7 @@ class WorkflowIOManager(IOManager):
             storage_dir: Directory for temporary data storage
         """
         self.storage_dir = storage_dir
+        self._cache: dict[str, Any] = {}  # Simple in-memory store for data exchange
 
     def handle_output(self, context: OutputContext, obj: Any) -> None:
         """Store output data from a workflow step.
@@ -50,8 +51,11 @@ class WorkflowIOManager(IOManager):
             context: Dagster output context
             obj: Output data from the workflow step
         """
-        # For now, just store in memory using the Dagster event log storage
-        # In a production system, this could serialize to disk or a database
+        # Store the output data in our cache using a unique key
+        key = str(context.get_run_scoped_output_identifier())
+        self._cache[key] = obj
+
+        # Add metadata to help with debugging and monitoring
         context.add_output_metadata(
             {
                 "record_count": MetadataValue.int(len(obj) if isinstance(obj, list | dict) else 1),
@@ -68,8 +72,9 @@ class WorkflowIOManager(IOManager):
         Returns:
             Input data for the workflow step
         """
-        # Retrieve data from upstream output
-        return context.get_upstream_output()
+        # Retrieve data from cache using the unique identifier
+        key = str(context.get_run_scoped_output_identifier())
+        return self._cache.get(key)
 
 
 @io_manager
@@ -326,5 +331,7 @@ def _setup_loguru_dagster_bridge(dagster_logger: DagsterLogManager) -> None:
             """
             dagster_logger.info(message.rstrip())
 
-    # Temporarily intercept loguru logs to Dagster
-    logger.configure(handlers=[{"sink": DagsterLoggerHandler(), "format": "{message}"}])
+    # Only add the Dagster handler if it's not already present
+    # This preserves existing sinks and prevents duplicate handlers
+    if not any(isinstance(handler.sink, DagsterLoggerHandler) for handler in logger._core.handlers.values()):
+        logger.add(DagsterLoggerHandler(), format="{message}")

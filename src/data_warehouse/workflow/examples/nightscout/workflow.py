@@ -31,6 +31,7 @@ class NightscoutWorkflow(WorkflowBase):
         super().__init__(config)
 
         # Create component configurations from the main config
+        # Use empty dictionaries as defaults to prevent None values
         extractor_config = self.config.get("extractor", {})
         transformer_config = self.config.get("transformer", {})
         loader_config = self.config.get("loader", {})
@@ -79,6 +80,7 @@ class NightscoutWorkflow(WorkflowBase):
             extracted_data = context.get_data("extracted_data")
             if not extracted_data:
                 logger.warning("No extracted data found in context, skipping transformation")
+                # Update context even when no data is available
                 context.update_data({"transformed_data": {}})
                 return context
 
@@ -107,6 +109,8 @@ class NightscoutWorkflow(WorkflowBase):
             transformed_data = context.get_data("transformed_data")
             if not transformed_data:
                 logger.warning("No transformed data found in context, skipping loading")
+                # Always update context even when no data is loaded
+                context.update_data({"records_loaded": 0})
                 return context
 
             records_loaded = self.loader.load(transformed_data, context)
