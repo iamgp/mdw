@@ -9,8 +9,8 @@ import logging
 import os
 from typing import Any
 
-from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from data_warehouse.workflows.workflow_manager import WorkflowManager
+from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.core.workflow_manager import WorkflowManager
 
 logger = logging.getLogger(__name__)
 

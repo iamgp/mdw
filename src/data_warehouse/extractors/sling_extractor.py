@@ -12,8 +12,8 @@ from typing import Any
 from sling import Sling
 from sling.exceptions import SlingClientError, SlingConnectionError
 
-from data_warehouse.workflows.base import BaseExtractor, MetadataType
-from data_warehouse.workflows.exceptions import ExtractorError, ValidationError
+from data_warehouse.workflows.core.base import BaseExtractor, MetadataType
+from data_warehouse.workflows.core.exceptions import ExtractorError, ValidationError
 
 logger = logging.getLogger(__name__)
 

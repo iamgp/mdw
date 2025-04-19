@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 from dagster import AssetIn, AssetsDefinition
 
-from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from data_warehouse.workflows.dagster_integration import (
+from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.integrations.dagster_integration import (
     create_dagster_asset_from_component,
     create_dagster_job_from_pipeline,
     get_dagster_asset_key,

@@ -8,8 +8,8 @@ and pipelines, ensuring they are properly configured and compatible with each ot
 import logging
 from collections.abc import Mapping
 
-from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from data_warehouse.workflows.exceptions import ValidationError
+from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 

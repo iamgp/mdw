@@ -4,23 +4,14 @@ Initialize the workflows package.
 Exposes key components for easier access.
 """
 
-from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from data_warehouse.workflows.cli import cli
-from data_warehouse.workflows.dagster_integration import (
-    ExtractorToDagsterOp,
-    LoaderToDagsterOp,
-    PipelineToDagsterJob,
-    TransformerToDagsterOp,
-    create_dagster_repository,
-)
-from data_warehouse.workflows.discovery import (
+from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.core.discovery import (
     discover_extractors,
     discover_loaders,
     discover_pipelines,
     discover_transformers,
 )
-from data_warehouse.workflows.docs_generator import DocsGenerator
-from data_warehouse.workflows.exceptions import (
+from data_warehouse.workflows.core.exceptions import (
     ConfigurationError,
     DiscoveryError,
     DocsGeneratorError,
@@ -32,46 +23,55 @@ from data_warehouse.workflows.exceptions import (
     ValidationError,
     WatcherError,
 )
-from data_warehouse.workflows.registry import Registry
-from data_warehouse.workflows.templates import TemplateGenerator, TemplateParser
-from data_warehouse.workflows.validator import WorkflowValidator
-from data_warehouse.workflows.watcher import WorkflowFileHandler, WorkflowWatcher
-from data_warehouse.workflows.workflow_manager import WorkflowManager
+from data_warehouse.workflows.core.registry import Registry
+from data_warehouse.workflows.core.workflow_manager import WorkflowManager
+from data_warehouse.workflows.integrations.dagster_integration import (
+    ExtractorToDagsterOp,
+    LoaderToDagsterOp,
+    PipelineToDagsterJob,
+    TransformerToDagsterOp,
+    create_dagster_repository,
+)
+from data_warehouse.workflows.tools.cli import cli
+from data_warehouse.workflows.tools.docs_generator import DocsGenerator
+from data_warehouse.workflows.tools.templates import TemplateGenerator, TemplateParser
+from data_warehouse.workflows.tools.validator import WorkflowValidator
+from data_warehouse.workflows.tools.watcher import WorkflowFileHandler, WorkflowWatcher
 
 __all__ = [
-    # Base Classes
+    # Base Classes (from core.base)
     "BaseExtractor",
     "BaseLoader",
     "BaseTransformer",
     "Pipeline",
-    # Workflow Manager
+    # Workflow Manager (from core.workflow_manager)
     "WorkflowManager",
-    # Registry
+    # Registry (from core.registry)
     "Registry",
-    # Discovery
+    # Discovery (from core.discovery)
     "discover_extractors",
     "discover_loaders",
     "discover_pipelines",
     "discover_transformers",
-    # Templates
+    # Templates (from tools.templates)
     "TemplateGenerator",
     "TemplateParser",
-    # Validator
+    # Validator (from tools.validator)
     "WorkflowValidator",
-    # Dagster Integration
+    # Dagster Integration (from integrations.dagster_integration)
     "ExtractorToDagsterOp",
     "TransformerToDagsterOp",
     "LoaderToDagsterOp",
     "PipelineToDagsterJob",
     "create_dagster_repository",
-    # Watcher
+    # Watcher (from tools.watcher)
     "WorkflowWatcher",
     "WorkflowFileHandler",
-    # Docs Generator
+    # Docs Generator (from tools.docs_generator)
     "DocsGenerator",
-    # CLI
+    # CLI (from tools.cli)
     "cli",
-    # Exceptions
+    # Exceptions (from core.exceptions)
     "ConfigurationError",
     "ValidationError",
     "ExtractorError",

@@ -7,13 +7,13 @@ This module provides a registry for tracking all available workflow components.
 import logging
 from typing import Any, TypeVar
 
-from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from data_warehouse.workflows.discovery import (
+from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.core.discovery import (
     discover_extractors,
     discover_loaders,
     discover_transformers,
 )
-from data_warehouse.workflows.exceptions import ConfigurationError
+from data_warehouse.workflows.core.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
 

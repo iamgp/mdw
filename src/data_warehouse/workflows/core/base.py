@@ -14,7 +14,7 @@ from dagster import OpExecutionContext, asset
 from loguru import logger
 from pydantic import BaseModel
 
-from data_warehouse.workflows.exceptions import (
+from data_warehouse.workflows.core.exceptions import (
     PipelineError,
 )
 

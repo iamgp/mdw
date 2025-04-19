@@ -14,7 +14,7 @@ import yaml
 from jsonschema import Draft7Validator
 from jsonschema import ValidationError as JsonSchemaError
 
-from data_warehouse.workflows.exceptions import ConfigurationError, ValidationError
+from data_warehouse.workflows.core.exceptions import ConfigurationError, ValidationError
 
 logger = logging.getLogger(__name__)
 

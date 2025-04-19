@@ -7,9 +7,9 @@ from typing import Any
 
 import pytest
 
-from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from data_warehouse.workflows.exceptions import ValidationError
-from data_warehouse.workflows.validator import WorkflowValidator
+from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.core.exceptions import ValidationError
+from data_warehouse.workflows.tools.validator import WorkflowValidator
 
 
 # Create concrete implementations with format tracking for testing

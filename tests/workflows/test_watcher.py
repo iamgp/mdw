@@ -7,7 +7,7 @@ import tempfile
 import time
 import unittest
 
-from data_warehouse.workflows.watcher import WorkflowFileHandler, WorkflowWatcher
+from data_warehouse.workflows.tools.watcher import WorkflowFileHandler, WorkflowWatcher
 
 
 class TestWorkflowFileHandler(unittest.TestCase):

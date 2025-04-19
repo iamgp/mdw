@@ -22,8 +22,8 @@ from dagster import (
     op,
 )
 
-from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from data_warehouse.workflows.exceptions import TransformerError
+from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.core.exceptions import TransformerError
 
 logger = logging.getLogger(__name__)
 

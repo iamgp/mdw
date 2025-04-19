@@ -10,8 +10,8 @@ import sys
 
 import click
 
-from data_warehouse.workflows.templates import TemplateGenerator, TemplateParser
-from data_warehouse.workflows.workflow_manager import WorkflowManager
+from data_warehouse.workflows.core.workflow_manager import WorkflowManager
+from data_warehouse.workflows.tools.templates import TemplateGenerator, TemplateParser
 
 # Configure logging
 logging.basicConfig(
@@ -249,7 +249,7 @@ def watch(directory: list[str]) -> None:
         click.echo("Starting workflow watcher...")
         # Dynamically import WorkflowWatcher to avoid circular dependency
         # if watchdog is not installed
-        from data_warehouse.workflows.watcher import WorkflowWatcher
+        from data_warehouse.workflows.tools.watcher import WorkflowWatcher
 
         with WorkflowWatcher(directories=directories, reload_callback=reload_callback):
             click.echo("Watching workflow directories for changes (press Ctrl+C to stop)")

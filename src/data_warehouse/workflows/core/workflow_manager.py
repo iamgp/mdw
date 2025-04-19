@@ -8,11 +8,11 @@ and discovery systems to manage workflow components and pipelines.
 import logging
 from typing import Any
 
-from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from data_warehouse.workflows.exceptions import ConfigurationError, ValidationError
-from data_warehouse.workflows.registry import Registry
-from data_warehouse.workflows.templates import TemplateGenerator, TemplateParser
-from data_warehouse.workflows.validator import WorkflowValidator
+from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.core.exceptions import ConfigurationError, ValidationError
+from data_warehouse.workflows.core.registry import Registry
+from data_warehouse.workflows.tools.templates import TemplateGenerator, TemplateParser
+from data_warehouse.workflows.tools.validator import WorkflowValidator
 
 logger = logging.getLogger(__name__)
 

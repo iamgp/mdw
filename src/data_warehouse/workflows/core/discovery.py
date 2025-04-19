@@ -15,8 +15,8 @@ import sys
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer
-from data_warehouse.workflows.exceptions import ConfigurationError
+from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer
+from data_warehouse.workflows.core.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
 
