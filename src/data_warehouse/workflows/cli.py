@@ -10,8 +10,8 @@ import sys
 
 import click
 
-from workflows.templates import TemplateGenerator, TemplateParser
-from workflows.workflow_manager import WorkflowManager
+from data_warehouse.workflows.templates import TemplateGenerator, TemplateParser
+from data_warehouse.workflows.workflow_manager import WorkflowManager
 
 # Configure logging
 logging.basicConfig(
@@ -234,8 +234,6 @@ def watch(directory: list[str]) -> None:
     automatically reloads components when files are created or modified.
     """
     try:
-        from workflows.watcher import WorkflowWatcher
-
         workflow_manager = WorkflowManager()
 
         # Define the reload callback
@@ -249,6 +247,10 @@ def watch(directory: list[str]) -> None:
 
         # Create and start the watcher
         click.echo("Starting workflow watcher...")
+        # Dynamically import WorkflowWatcher to avoid circular dependency
+        # if watchdog is not installed
+        from data_warehouse.workflows.watcher import WorkflowWatcher
+
         with WorkflowWatcher(directories=directories, reload_callback=reload_callback):
             click.echo("Watching workflow directories for changes (press Ctrl+C to stop)")
             try:

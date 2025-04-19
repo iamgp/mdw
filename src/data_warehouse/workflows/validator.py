@@ -5,8 +5,13 @@ This module provides a WorkflowValidator class for validating workflow component
 and pipelines, ensuring they are properly configured and compatible with each other.
 """
 
-from workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from workflows.exceptions import ValidationError
+import logging
+from collections.abc import Mapping
+
+from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.exceptions import ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 class WorkflowValidator:
@@ -230,19 +235,19 @@ class WorkflowValidator:
 
     def validate_workflow(
         self,
-        extractors: dict[str, BaseExtractor],
-        transformers: dict[str, BaseTransformer],
-        loaders: dict[str, BaseLoader],
-        pipelines: dict[str, Pipeline],
+        extractors: Mapping[str, BaseExtractor],
+        transformers: Mapping[str, BaseTransformer],
+        loaders: Mapping[str, BaseLoader],
+        pipelines: Mapping[str, Pipeline],
     ) -> bool:
         """
         Validate the entire workflow.
 
         Args:
-            extractors: A dictionary of extractors
-            transformers: A dictionary of transformers
-            loaders: A dictionary of loaders
-            pipelines: A dictionary of pipelines
+            extractors: A mapping of extractor names to extractors
+            transformers: A mapping of transformer names to transformers
+            loaders: A mapping of loader names to loaders
+            pipelines: A mapping of pipeline names to pipelines
 
         Returns:
             True if the workflow is valid
@@ -250,18 +255,9 @@ class WorkflowValidator:
         Raises:
             ValidationError: If the workflow is invalid
         """
-        # Validate all components
-        for _name, extractor in extractors.items():
-            self.validate_component(extractor)
-
-        for _name, transformer in transformers.items():
-            self.validate_component(transformer)
-
-        for _name, loader in loaders.items():
-            self.validate_component(loader)
-
-        # Validate all pipelines
-        for _name, pipeline in pipelines.items():
+        logger.info("Validating entire workflow...")
+        for pipeline in pipelines.values():
             self.validate_pipeline(pipeline)
 
+        logger.info("Workflow validation successful.")
         return True

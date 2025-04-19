@@ -5,14 +5,14 @@ Unit tests for the base workflow classes.
 import unittest
 from typing import Any
 
-from workflows.base import (
+from data_warehouse.workflows.base import (
     BaseExtractor,
     BaseLoader,
     BaseTransformer,
     Pipeline,
     WorkflowManager,
 )
-from workflows.exceptions import ValidationError
+from data_warehouse.workflows.exceptions import ValidationError
 
 
 # Create concrete implementations for testing

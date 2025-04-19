@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
 
 
 class TestPipeline(unittest.TestCase):
@@ -119,23 +119,30 @@ class TestPipeline(unittest.TestCase):
         assert "mock_loader" in pipeline_repr
 
 
-class CustomExtractor(BaseExtractor):
+class CustomExtractor(BaseExtractor[Any]):
     """Custom extractor for integration testing."""
 
-    def extract(self) -> dict[str, Any]:
-        """Extract method that returns a simple dictionary."""
-        return {"data": "source_data"}
+    def extract(self) -> Any:
+        return self.config.get("data", "default_extracted")
+
+    def validate_source(self) -> bool:
+        return True
 
 
-class CustomTransformer(BaseTransformer):
+class CustomTransformer(BaseTransformer[Any, Any]):
     """Custom transformer for integration testing."""
 
-    def transform(self, data: dict[str, Any]) -> dict[str, Any]:
-        """Transform method that modifies the input data."""
-        return {"data": data["data"] + "_transformed"}
+    def transform(self, data: Any) -> Any:
+        return f"{data}_{self.config.get('suffix', 'transformed')}"
+
+    def validate_input(self, data: Any) -> bool:
+        return True
+
+    def validate_output(self, data: Any) -> bool:
+        return True
 
 
-class CustomLoader(BaseLoader):
+class CustomLoader(BaseLoader[Any]):
     """Custom loader for integration testing."""
 
     def __init__(self, name: str = "custom_loader", **kwargs: Any):
@@ -143,9 +150,12 @@ class CustomLoader(BaseLoader):
         super().__init__(name=name, **kwargs)
         self.results: list[dict[str, Any]] = []
 
-    def load(self, data: dict[str, Any]) -> None:
+    def load(self, data: Any) -> None:
         """Load method that stores the data in the results list."""
         self.results.append(data)
+
+    def validate_destination(self) -> bool:
+        return True
 
 
 class TestPipelineIntegration(unittest.TestCase):

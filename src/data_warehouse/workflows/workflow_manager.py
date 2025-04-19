@@ -5,13 +5,16 @@ This module provides a WorkflowManager class that integrates with the registry
 and discovery systems to manage workflow components and pipelines.
 """
 
+import logging
 from typing import Any
 
-from workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from workflows.exceptions import ConfigurationError, ValidationError
-from workflows.registry import Registry
-from workflows.templates import TemplateGenerator, TemplateParser
-from workflows.validator import WorkflowValidator
+from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.exceptions import ConfigurationError, ValidationError
+from data_warehouse.workflows.registry import Registry
+from data_warehouse.workflows.templates import TemplateGenerator, TemplateParser
+from data_warehouse.workflows.validator import WorkflowValidator
+
+logger = logging.getLogger(__name__)
 
 
 class WorkflowManager:

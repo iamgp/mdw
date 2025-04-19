@@ -11,8 +11,8 @@ from typing import Any
 import pytest
 import yaml
 
-from workflows.exceptions import ConfigurationError, ValidationError
-from workflows.templates import (
+from data_warehouse.workflows.exceptions import ConfigurationError, ValidationError
+from data_warehouse.workflows.templates import (
     TemplateGenerator,
     TemplateParser,
 )

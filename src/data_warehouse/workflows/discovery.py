@@ -8,14 +8,17 @@ and register workflow components (extractors, transformers, loaders, etc.).
 import importlib
 import importlib.util
 import inspect
+import logging
 import os
 import pkgutil
 import sys
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-from workflows.base import BaseExtractor, BaseLoader, BaseTransformer
-from workflows.exceptions import ConfigurationError
+from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer
+from data_warehouse.workflows.exceptions import ConfigurationError
+
+logger = logging.getLogger(__name__)
 
 # Type variable for workflow component classes
 T = TypeVar("T")

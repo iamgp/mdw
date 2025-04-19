@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 from dagster import AssetIn, AssetsDefinition
 
-from workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from workflows.dagster_integration import (
+from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.dagster_integration import (
     create_dagster_asset_from_component,
     create_dagster_job_from_pipeline,
     get_dagster_asset_key,
@@ -17,40 +17,52 @@ from workflows.dagster_integration import (
 )
 
 
-class MockExtractor(BaseExtractor):
+class MockExtractor(BaseExtractor[Any]):
     """Mock extractor for testing."""
 
     def __init__(self, name: str = "mock_extractor", **kwargs: Any):
         """Initialize the mock extractor."""
         super().__init__(name=name, **kwargs)
 
-    def extract(self) -> dict[str, Any]:
+    def extract(self) -> Any:
         """Mock extract method."""
-        return {"data": "mock_data"}
+        return "extracted_data"
+
+    def validate_source(self) -> bool:
+        return True
 
 
-class MockTransformer(BaseTransformer):
+class MockTransformer(BaseTransformer[Any, Any]):
     """Mock transformer for testing."""
 
     def __init__(self, name: str = "mock_transformer", **kwargs: Any):
         """Initialize the mock transformer."""
         super().__init__(name=name, **kwargs)
 
-    def transform(self, data: dict[str, Any]) -> dict[str, Any]:
+    def transform(self, data: Any) -> Any:
         """Mock transform method."""
-        return {"transformed_data": data["data"] + "_transformed"}
+        return f"transformed_{data}"
+
+    def validate_input(self, data: Any) -> bool:
+        return True
+
+    def validate_output(self, data: Any) -> bool:
+        return True
 
 
-class MockLoader(BaseLoader):
+class MockLoader(BaseLoader[Any]):
     """Mock loader for testing."""
 
     def __init__(self, name: str = "mock_loader", **kwargs: Any):
         """Initialize the mock loader."""
         super().__init__(name=name, **kwargs)
 
-    def load(self, data: dict[str, Any]) -> None:
+    def load(self, data: Any) -> None:
         """Mock load method."""
         pass
+
+    def validate_destination(self) -> bool:
+        return True
 
 
 class TestDagsterIntegration(unittest.TestCase):

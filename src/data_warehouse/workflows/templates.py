@@ -6,6 +6,7 @@ workflow templates in YAML or JSON format.
 """
 
 import json
+import logging
 import os
 from typing import Any
 
@@ -13,7 +14,9 @@ import yaml
 from jsonschema import Draft7Validator
 from jsonschema import ValidationError as JsonSchemaError
 
-from workflows.exceptions import ConfigurationError, ValidationError
+from data_warehouse.workflows.exceptions import ConfigurationError, ValidationError
+
+logger = logging.getLogger(__name__)
 
 # Define JSON Schema for workflow templates
 EXTRACTOR_SCHEMA = {

@@ -4,15 +4,18 @@ Registry system for the data warehouse workflow system.
 This module provides a registry for tracking all available workflow components.
 """
 
+import logging
 from typing import Any, TypeVar
 
-from workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
-from workflows.discovery import (
+from data_warehouse.workflows.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
+from data_warehouse.workflows.discovery import (
     discover_extractors,
     discover_loaders,
     discover_transformers,
 )
-from workflows.exceptions import ConfigurationError
+from data_warehouse.workflows.exceptions import ConfigurationError
+
+logger = logging.getLogger(__name__)
 
 # Type variable for component instances
 T = TypeVar("T")
