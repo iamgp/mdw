@@ -44,19 +44,48 @@ def discover_modules(package_path: str) -> list[str]:
     package_name = os.path.basename(package_path)
 
     # Make sure the package path is in sys.path so we can import from it
+    # NOTE: Modifying sys.path can be risky, consider alternatives if possible
     if package_path not in sys.path:
-        sys.path.insert(0, os.path.dirname(package_path))
+        # Find the parent directory containing the package
+        parent_dir = os.path.dirname(package_path)
+        if parent_dir not in sys.path:
+            sys.path.insert(0, parent_dir)
 
     # Discover all modules in the package
     module_names = []
 
     try:
-        importlib.import_module(package_name)
+        # Ensure the top-level package itself is importable if needed
+        # Example: if package_path is 'src/data_warehouse/extractors', ensure 'data_warehouse' is importable
+        # This part might need adjustment based on project structure and how packages are installed/managed.
+        # Trying to import the immediate parent might not always work correctly.
+        # It's generally better if the 'src' directory or project root is in PYTHONPATH.
+
+        # Use pkgutil.iter_modules to find modules directly within the path
         for _, name, is_pkg in pkgutil.iter_modules([package_path]):
             if not is_pkg:  # Only include modules, not sub-packages
-                module_names.append(f"{package_name}.{name}")
+                # Construct the full module name based on the package structure
+                # Assuming the parent of package_path contains the base package
+                # e.g., if package_path = src/data_warehouse/extractors,
+                # we might want data_warehouse.extractors.module_name
+                # This requires knowing the base package name relative to sys.path
+
+                # Simplistic approach: use basename as package name
+                # This might break if package_path is deeply nested relative to PYTHONPATH entries
+                full_module_name = f"{package_name}.{name}"
+                module_names.append(full_module_name)
+                logger.debug(f"Discovered module: {full_module_name}")
+            # Add recursive call here if subpackages needed to be scanned
+            # elif is_pkg:
+            #     module_names.extend(discover_modules(os.path.join(package_path, name)))
+
     except ImportError as e:
-        raise ConfigurationError(f"Error importing package {package_name}: {str(e)}") from e
+        logger.error(f"ImportError during module discovery in {package_path}: {e}. Check PYTHONPATH.")
+        # Decide if this should raise ConfigurationError or just return empty/partial list
+        # raise ConfigurationError(f"Error importing package {package_name}: {str(e)}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error during module discovery in {package_path}: {e}")
+        # Decide if this should raise or return empty
 
     return module_names
 

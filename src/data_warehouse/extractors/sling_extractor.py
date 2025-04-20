@@ -11,29 +11,13 @@ from datetime import datetime
 from typing import Any
 
 # Import Prometheus metrics types
-from prometheus_client import Counter, Histogram
+from prometheus_client import REGISTRY, Counter, Histogram
 from sling import Sling
 
 from data_warehouse.workflows.core.base import BaseExtractor, MetadataType
 from data_warehouse.workflows.core.exceptions import ExtractorError, ValidationError
 
 logger = logging.getLogger(__name__)
-
-# --- Prometheus Metrics Definition ---
-# Define metrics at the module level to avoid re-creation
-# Use labels to distinguish between different extractor instances and outcomes
-SLING_EXTRACTOR_DURATION = Histogram(
-    "sling_extractor_duration_seconds",
-    "Duration of Sling extractor execution",
-    ["extractor_name"],  # Label by extractor name
-)
-SLING_EXTRACTOR_RECORDS = Counter(
-    "sling_extractor_records_total", "Total number of records extracted by Sling extractor", ["extractor_name"]
-)
-SLING_EXTRACTOR_ERRORS = Counter(
-    "sling_extractor_errors_total", "Total number of errors during Sling extractor execution", ["extractor_name"]
-)
-# -------------------------------------
 
 
 class SlingExtractor(BaseExtractor[list[dict[str, Any]]]):
@@ -55,6 +39,39 @@ class SlingExtractor(BaseExtractor[list[dict[str, Any]]]):
         }
     """
 
+    # Class variables to hold metrics, ensuring they are defined only once
+    _metrics_initialized = False
+    SLING_EXTRACTOR_DURATION: Histogram | None = None
+    SLING_EXTRACTOR_RECORDS: Counter | None = None
+    SLING_EXTRACTOR_ERRORS: Counter | None = None
+
+    @classmethod
+    def _initialize_metrics(cls) -> None:
+        """Initialize Prometheus metrics if they haven't been already."""
+        if not cls._metrics_initialized:
+            logger.debug("Initializing SlingExtractor Prometheus metrics...")
+            # Check if metrics already exist in the registry to prevent errors
+            # during hot-reloading or multiple initializations in tests
+            if "sling_extractor_duration_seconds" not in REGISTRY._names_to_collectors:
+                cls.SLING_EXTRACTOR_DURATION = Histogram(
+                    "sling_extractor_duration_seconds",
+                    "Duration of Sling extractor execution",
+                    ["extractor_name"],
+                )
+            if "sling_extractor_records_total" not in REGISTRY._names_to_collectors:
+                cls.SLING_EXTRACTOR_RECORDS = Counter(
+                    "sling_extractor_records_total",
+                    "Total number of records extracted by Sling extractor",
+                    ["extractor_name"],
+                )
+            if "sling_extractor_errors_total" not in REGISTRY._names_to_collectors:
+                cls.SLING_EXTRACTOR_ERRORS = Counter(
+                    "sling_extractor_errors_total",
+                    "Total number of errors during Sling extractor execution",
+                    ["extractor_name"],
+                )
+            cls._metrics_initialized = True
+
     def __init__(self, name: str, config: dict[str, Any] | None = None) -> None:
         """
         Initialize SlingExtractor.
@@ -63,6 +80,8 @@ class SlingExtractor(BaseExtractor[list[dict[str, Any]]]):
             name: Name of the extractor instance.
             config: Configuration dictionary. Must contain 'sling_config'.
         """
+        # Ensure metrics are initialized before super().__init__ might use them indirectly
+        self._initialize_metrics()
         super().__init__(name, config)
         if not self.config or "sling_config" not in self.config:
             raise ValidationError("SlingExtractor configuration must include a 'sling_config' key.")
@@ -81,17 +100,27 @@ class SlingExtractor(BaseExtractor[list[dict[str, Any]]]):
         logger.info(f"Starting Sling extraction for '{self.name}'...")
         start_time = time.monotonic()
         try:
-            # Potential for connection pooling/retry logic could be added here
-            # if Sling doesn't handle it adequately internally.
-            # For now, relying on Sling's internal mechanisms.
-            sling_instance = Sling(**self._sling_config)
+            # Sling config should be nested, e.g., {"source": {"stream": ..., "options": {}}}
+            # Pass the nested source dict to the 'source' parameter of Sling()
+            source_config = self._sling_config.get("source")
+            if not isinstance(source_config, dict):
+                raise ExtractorError(f"Invalid or missing 'source' configuration in sling_config for '{self.name}'")
+
+            # Assuming Sling() takes source and target dicts, and we only have source
+            sling_instance = Sling(source=source_config)
+            # If Sling expects Source/Target *objects*, this will need further adjustment:
+            # source_obj = sling.Source(**source_config)
+            # sling_instance = Sling(source=source_obj)
+
             records = list(sling_instance.stream())
             self.last_run_time = datetime.now()
 
             # Record metrics on success
             duration = time.monotonic() - start_time
-            SLING_EXTRACTOR_DURATION.labels(extractor_name=self.name).observe(duration)
-            SLING_EXTRACTOR_RECORDS.labels(extractor_name=self.name).inc(len(records))
+            if self.SLING_EXTRACTOR_DURATION:
+                self.SLING_EXTRACTOR_DURATION.labels(extractor_name=self.name).observe(duration)
+            if self.SLING_EXTRACTOR_RECORDS:
+                self.SLING_EXTRACTOR_RECORDS.labels(extractor_name=self.name).inc(len(records))
 
             logger.info(
                 f"Sling extraction for '{self.name}' completed successfully in {duration:.2f}s. {len(records)} records extracted."
@@ -100,10 +129,10 @@ class SlingExtractor(BaseExtractor[list[dict[str, Any]]]):
         except Exception as e:
             # Record error metric
             duration = time.monotonic() - start_time
-            SLING_EXTRACTOR_DURATION.labels(extractor_name=self.name).observe(
-                duration
-            )  # Observe duration even on error
-            SLING_EXTRACTOR_ERRORS.labels(extractor_name=self.name).inc()
+            if self.SLING_EXTRACTOR_DURATION:  # Observe duration even on error
+                self.SLING_EXTRACTOR_DURATION.labels(extractor_name=self.name).observe(duration)
+            if self.SLING_EXTRACTOR_ERRORS:
+                self.SLING_EXTRACTOR_ERRORS.labels(extractor_name=self.name).inc()
 
             logger.error(
                 f"An unexpected error occurred during Sling extraction for '{self.name}' after {duration:.2f}s: {e}",

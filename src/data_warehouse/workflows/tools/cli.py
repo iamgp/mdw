@@ -97,29 +97,59 @@ def list_components(component_type: str) -> None:
 
 @cli.command("execute")
 @click.argument("pipeline_name")
+@click.option(
+    "--template",
+    "-t",
+    required=True,  # Make template mandatory for execution now
+    help="Path to the YAML/JSON template file defining the pipeline and its components.",
+)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output during execution")
-def execute_pipeline(pipeline_name: str, verbose: bool) -> None:
+def execute_pipeline(pipeline_name: str, template: str, verbose: bool) -> None:
     """
-    Execute a workflow pipeline.
+    Execute a workflow pipeline defined in a template file.
 
-    This command runs a specified pipeline, processing data through its
-    extractor, transformers, and loader components.
+    This command loads the specified template, creates the pipeline instance,
+    and then runs it, processing data through its extractor, transformers,
+    and loader components.
     """
     if verbose:
         logging.getLogger("workflows").setLevel(logging.DEBUG)
+        # Assuming root logger or specific loggers might need adjustment too
+        logging.getLogger().setLevel(logging.DEBUG)
 
     workflow_manager = WorkflowManager()
+    # Discovery happens implicitly within create_pipeline_from_template or should be called
+    # Let's ensure components are discovered before creating from template
     workflow_manager.discover_components()
 
     try:
-        click.echo(f"Executing pipeline: {pipeline_name}")
-        result = workflow_manager.execute_pipeline(pipeline_name)
+        # Create/Register the pipeline from the template first
+        click.echo(f"Loading pipeline '{pipeline_name}' from template: {template}")
+        # Ensure the create method doesn't error if pipeline *instance* already exists
+        # (though in this CLI flow, it likely won't)
+        pipeline_instance = workflow_manager.create_pipeline_from_template(template)
+
+        # Check if the loaded pipeline name matches the expected one
+        if pipeline_instance.name != pipeline_name:
+            logger.warning(
+                f"Executing pipeline '{pipeline_instance.name}' loaded from template, "
+                f"which differs from the provided argument '{pipeline_name}'."
+            )
+            # Decide whether to proceed with loaded name or error out.
+            # Proceeding for now.
+            pipeline_to_execute = pipeline_instance.name
+        else:
+            pipeline_to_execute = pipeline_name
+
+        # Execute the pipeline by the name confirmed/loaded from the template
+        click.echo(f"Executing pipeline: {pipeline_to_execute}")
+        result = workflow_manager.execute_pipeline(pipeline_to_execute)
         click.echo(click.style("Pipeline executed successfully", fg="green"))
-        return result
+        # Optionally display result or summary here
+        # click.echo(f"Result: {result}")
     except Exception as e:
         click.echo(click.style(f"Error executing pipeline: {str(e)}", fg="red"))
-        if verbose:
-            logger.exception("Pipeline execution error")
+        logger.exception("Pipeline execution error")
         sys.exit(1)
 
 
@@ -206,21 +236,23 @@ def create_template(pipeline: str | None, output: str, format: str, example: boo
 @click.argument("template_file")
 def create_pipeline(template_file: str) -> None:
     """
-    Create a pipeline from a template file.
+    Create and register components and pipeline(s) from a template file.
 
-    This command loads a template file and creates a new pipeline,
-    registering all necessary components.
+    Loads a template, instantiates and registers the defined components
+    (extractors, transformers, loaders), and then creates and registers
+    the pipeline(s) defined within it.
     """
-    try:
-        workflow_manager = WorkflowManager()
-        workflow_manager.discover_components()
+    workflow_manager = WorkflowManager()
+    # Discover components from standard locations first
+    workflow_manager.discover_components()
 
+    try:
         click.echo(f"Creating pipeline from template: {template_file}")
         pipeline = workflow_manager.create_pipeline_from_template(template_file)
-        workflow_manager.register_pipeline(pipeline)
         click.echo(click.style(f"Pipeline '{pipeline.name}' created successfully", fg="green"))
     except Exception as e:
         click.echo(click.style(f"Error creating pipeline: {str(e)}", fg="red"))
+        logger.exception("Pipeline creation error")  # Log full traceback on error
         sys.exit(1)
 
 

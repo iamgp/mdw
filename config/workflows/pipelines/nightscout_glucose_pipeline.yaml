@@ -1,0 +1,26 @@
+---
+version: "1.0"
+description: Pipeline to extract hourly glucose data from Nightscout.
+
+# Define the extractor instance
+extractors:
+  - name: nightscout_glucose_hourly # Must match the name used in the pipeline
+    type: NightscoutExtractor # The class name
+    config:
+      base_url: gwp-diabetes.fly.dev # Your specified base URL
+      # api_secret is now optional and omitted
+      lookback_hours: 1 # Default to 1 hour
+
+# Define a passthrough transformer instance to satisfy validation
+transformers:
+  - name: passthrough_transformer
+    type: PassthroughTransformer # From basic_transformers.py
+    config: {} # No config needed
+
+# Define the pipeline
+pipelines:
+  - name: nightscout_hourly_pipeline # The name you will use to execute
+    extractor: nightscout_glucose_hourly # Reference the extractor instance by name
+    transformers: [passthrough_transformer] # Reference the transformer instance
+    # No loaders defined for this simple example
+    config: {} # Optional pipeline-specific config
