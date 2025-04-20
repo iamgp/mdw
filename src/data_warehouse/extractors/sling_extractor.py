@@ -6,15 +6,34 @@ to extract data from various sources supported by Sling.
 """
 
 import logging
+import time  # Import time for duration calculation
 from datetime import datetime
 from typing import Any
 
+# Import Prometheus metrics types
+from prometheus_client import Counter, Histogram
 from sling import Sling
 
 from data_warehouse.workflows.core.base import BaseExtractor, MetadataType
 from data_warehouse.workflows.core.exceptions import ExtractorError, ValidationError
 
 logger = logging.getLogger(__name__)
+
+# --- Prometheus Metrics Definition ---
+# Define metrics at the module level to avoid re-creation
+# Use labels to distinguish between different extractor instances and outcomes
+SLING_EXTRACTOR_DURATION = Histogram(
+    "sling_extractor_duration_seconds",
+    "Duration of Sling extractor execution",
+    ["extractor_name"],  # Label by extractor name
+)
+SLING_EXTRACTOR_RECORDS = Counter(
+    "sling_extractor_records_total", "Total number of records extracted by Sling extractor", ["extractor_name"]
+)
+SLING_EXTRACTOR_ERRORS = Counter(
+    "sling_extractor_errors_total", "Total number of errors during Sling extractor execution", ["extractor_name"]
+)
+# -------------------------------------
 
 
 class SlingExtractor(BaseExtractor[list[dict[str, Any]]]):
@@ -60,6 +79,7 @@ class SlingExtractor(BaseExtractor[list[dict[str, Any]]]):
             ExtractorError: If extraction fails due to Sling errors.
         """
         logger.info(f"Starting Sling extraction for '{self.name}'...")
+        start_time = time.monotonic()
         try:
             # Potential for connection pooling/retry logic could be added here
             # if Sling doesn't handle it adequately internally.
@@ -67,11 +87,26 @@ class SlingExtractor(BaseExtractor[list[dict[str, Any]]]):
             sling_instance = Sling(**self._sling_config)
             records = list(sling_instance.stream())
             self.last_run_time = datetime.now()
-            logger.info(f"Sling extraction for '{self.name}' completed successfully. {len(records)} records extracted.")
+
+            # Record metrics on success
+            duration = time.monotonic() - start_time
+            SLING_EXTRACTOR_DURATION.labels(extractor_name=self.name).observe(duration)
+            SLING_EXTRACTOR_RECORDS.labels(extractor_name=self.name).inc(len(records))
+
+            logger.info(
+                f"Sling extraction for '{self.name}' completed successfully in {duration:.2f}s. {len(records)} records extracted."
+            )
             return records
         except Exception as e:
+            # Record error metric
+            duration = time.monotonic() - start_time
+            SLING_EXTRACTOR_DURATION.labels(extractor_name=self.name).observe(
+                duration
+            )  # Observe duration even on error
+            SLING_EXTRACTOR_ERRORS.labels(extractor_name=self.name).inc()
+
             logger.error(
-                f"An unexpected error occurred during Sling extraction for '{self.name}': {e}",
+                f"An unexpected error occurred during Sling extraction for '{self.name}' after {duration:.2f}s: {e}",
                 exc_info=True,
             )
             raise ExtractorError(f"Unexpected error during Sling extraction: {e}") from e
