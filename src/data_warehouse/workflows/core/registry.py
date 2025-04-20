@@ -5,7 +5,7 @@ This module provides a registry for tracking all available workflow components.
 """
 
 import logging
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
 from data_warehouse.workflows.core.discovery import (
@@ -23,366 +23,271 @@ T = TypeVar("T")
 
 class Registry:
     """
-    A registry for tracking all available workflow components.
+    A registry for tracking available workflow components and their types.
 
-    The registry serves as a central repository for all extractors, transformers,
-    loaders, and pipelines in the workflow system. It provides methods for
-    registering, retrieving, and managing components.
+    The registry serves as a central repository for:
+    - Discovered component *types* (classes).
+    - Instantiated and configured component *instances*.
+    - Defined pipelines.
     """
 
     def __init__(self) -> None:
         """Initialize a Registry instance."""
+        # Storage for instantiated components
         self.extractors: dict[str, BaseExtractor] = {}
         self.transformers: dict[str, BaseTransformer] = {}
         self.loaders: dict[str, BaseLoader] = {}
         self.pipelines: dict[str, Pipeline] = {}
 
+        # Storage for discovered component types (classes)
+        self.extractor_types: dict[str, type[BaseExtractor]] = {}
+        self.transformer_types: dict[str, type[BaseTransformer]] = {}
+        self.loader_types: dict[str, type[BaseLoader]] = {}
+
+    # --- Type Registration/Retrieval ---
+
+    def register_extractor_type(self, extractor_class: type[BaseExtractor]) -> None:
+        """Register a discovered extractor class."""
+        class_name = extractor_class.__name__
+        if class_name in self.extractor_types:
+            logger.warning(f"Extractor type '{class_name}' is already registered. Overwriting.")
+        self.extractor_types[class_name] = extractor_class
+
+    def register_transformer_type(self, transformer_class: type[BaseTransformer]) -> None:
+        """Register a discovered transformer class."""
+        class_name = transformer_class.__name__
+        if class_name in self.transformer_types:
+            logger.warning(f"Transformer type '{class_name}' is already registered. Overwriting.")
+        self.transformer_types[class_name] = transformer_class
+
+    def register_loader_type(self, loader_class: type[BaseLoader]) -> None:
+        """Register a discovered loader class."""
+        class_name = loader_class.__name__
+        if class_name in self.loader_types:
+            logger.warning(f"Loader type '{class_name}' is already registered. Overwriting.")
+        self.loader_types[class_name] = loader_class
+
+    def get_extractor_type(self, class_name: str) -> type[BaseExtractor]:
+        """Get an extractor class by its name."""
+        if class_name not in self.extractor_types:
+            raise KeyError(f"No extractor type '{class_name}' is registered")
+        return self.extractor_types[class_name]
+
+    def get_transformer_type(self, class_name: str) -> type[BaseTransformer]:
+        """Get a transformer class by its name."""
+        if class_name not in self.transformer_types:
+            raise KeyError(f"No transformer type '{class_name}' is registered")
+        return self.transformer_types[class_name]
+
+    def get_loader_type(self, class_name: str) -> type[BaseLoader]:
+        """Get a loader class by its name."""
+        if class_name not in self.loader_types:
+            raise KeyError(f"No loader type '{class_name}' is registered")
+        return self.loader_types[class_name]
+
+    def get_all_extractor_types(self) -> dict[str, type[BaseExtractor]]:
+        """Get all registered extractor types."""
+        return self.extractor_types.copy()
+
+    def get_all_transformer_types(self) -> dict[str, type[BaseTransformer]]:
+        """Get all registered transformer types."""
+        return self.transformer_types.copy()
+
+    def get_all_loader_types(self) -> dict[str, type[BaseLoader]]:
+        """Get all registered loader types."""
+        return self.loader_types.copy()
+
+    # --- Instance Registration/Retrieval (Unchanged) ---
+
     def register_extractor(self, extractor: BaseExtractor) -> None:
-        """
-        Register an extractor.
+        """Register an extractor instance."""
+        logger.debug(
+            f"Attempting to register extractor instance. Name: '{extractor.name}', Type: {type(extractor.name)}"
+        )
+        if not isinstance(extractor.name, str):
+            logger.error(f"Extractor name is not a string! Got type: {type(extractor.name)}. Value: {extractor.name}")
+            raise ConfigurationError(f"Invalid extractor name type: {type(extractor.name)}")
 
-        Args:
-            extractor: The extractor to register
-
-        Raises:
-            ConfigurationError: If an extractor with the same name is already registered
-        """
         if extractor.name in self.extractors:
-            raise ConfigurationError(f"Extractor with name '{extractor.name}' is already registered")
-
+            logger.warning(f"Extractor instance with name '{extractor.name}' is already registered. Overwriting.")
         self.extractors[extractor.name] = extractor
+        logger.debug(f"Successfully registered extractor instance: '{extractor.name}'")
 
     def register_transformer(self, transformer: BaseTransformer) -> None:
-        """
-        Register a transformer.
-
-        Args:
-            transformer: The transformer to register
-
-        Raises:
-            ConfigurationError: If a transformer with the same name is already registered
-        """
+        """Register a transformer instance."""
         if transformer.name in self.transformers:
-            raise ConfigurationError(f"Transformer with name '{transformer.name}' is already registered")
-
+            raise ConfigurationError(f"Transformer instance with name '{transformer.name}' is already registered")
         self.transformers[transformer.name] = transformer
 
     def register_loader(self, loader: BaseLoader) -> None:
-        """
-        Register a loader.
-
-        Args:
-            loader: The loader to register
-
-        Raises:
-            ConfigurationError: If a loader with the same name is already registered
-        """
+        """Register a loader instance."""
         if loader.name in self.loaders:
-            raise ConfigurationError(f"Loader with name '{loader.name}' is already registered")
-
+            raise ConfigurationError(f"Loader instance with name '{loader.name}' is already registered")
         self.loaders[loader.name] = loader
 
     def register_pipeline(self, pipeline: Pipeline) -> None:
-        """
-        Register a pipeline.
-
-        Args:
-            pipeline: The pipeline to register
-
-        Raises:
-            ConfigurationError: If a pipeline with the same name is already registered
-        """
+        """Register a pipeline instance."""
         if pipeline.name in self.pipelines:
             raise ConfigurationError(f"Pipeline with name '{pipeline.name}' is already registered")
-
         self.pipelines[pipeline.name] = pipeline
 
+    # --- Unregister Methods (Should handle both types and instances if needed, simplified for now) ---
+
     def unregister_extractor(self, name: str) -> None:
-        """
-        Unregister an extractor by name.
-
-        Args:
-            name: The name of the extractor to unregister
-
-        Raises:
-            KeyError: If no extractor with the given name is registered
-        """
+        """Unregister an extractor instance by name."""
         if name not in self.extractors:
-            raise KeyError(f"No extractor with name '{name}' is registered")
-
+            raise KeyError(f"No extractor instance with name '{name}' is registered")
         del self.extractors[name]
+        # Potential: Also remove type? Depends on desired lifecycle.
 
     def unregister_transformer(self, name: str) -> None:
-        """
-        Unregister a transformer by name.
-
-        Args:
-            name: The name of the transformer to unregister
-
-        Raises:
-            KeyError: If no transformer with the given name is registered
-        """
+        """Unregister a transformer instance by name."""
         if name not in self.transformers:
-            raise KeyError(f"No transformer with name '{name}' is registered")
-
+            raise KeyError(f"No transformer instance with name '{name}' is registered")
         del self.transformers[name]
 
     def unregister_loader(self, name: str) -> None:
-        """
-        Unregister a loader by name.
-
-        Args:
-            name: The name of the loader to unregister
-
-        Raises:
-            KeyError: If no loader with the given name is registered
-        """
+        """Unregister a loader instance by name."""
         if name not in self.loaders:
-            raise KeyError(f"No loader with name '{name}' is registered")
-
+            raise KeyError(f"No loader instance with name '{name}' is registered")
         del self.loaders[name]
 
     def unregister_pipeline(self, name: str) -> None:
-        """
-        Unregister a pipeline by name.
-
-        Args:
-            name: The name of the pipeline to unregister
-
-        Raises:
-            KeyError: If no pipeline with the given name is registered
-        """
+        """Unregister a pipeline instance by name."""
         if name not in self.pipelines:
             raise KeyError(f"No pipeline with name '{name}' is registered")
-
         del self.pipelines[name]
 
+    # --- Instance Getters (Unchanged) ---
+
     def get_extractor(self, name: str) -> BaseExtractor:
-        """
-        Get an extractor by name.
-
-        Args:
-            name: The name of the extractor
-
-        Returns:
-            The extractor with the given name
-
-        Raises:
-            KeyError: If no extractor with the given name is registered
-        """
+        """Get an extractor instance by name."""
         if name not in self.extractors:
-            raise KeyError(f"No extractor with name '{name}' is registered")
-
+            raise KeyError(f"No extractor instance with name '{name}' is registered")
         return self.extractors[name]
 
     def get_transformer(self, name: str) -> BaseTransformer:
-        """
-        Get a transformer by name.
-
-        Args:
-            name: The name of the transformer
-
-        Returns:
-            The transformer with the given name
-
-        Raises:
-            KeyError: If no transformer with the given name is registered
-        """
+        """Get a transformer instance by name."""
         if name not in self.transformers:
-            raise KeyError(f"No transformer with name '{name}' is registered")
-
+            raise KeyError(f"No transformer instance with name '{name}' is registered")
         return self.transformers[name]
 
     def get_loader(self, name: str) -> BaseLoader:
-        """
-        Get a loader by name.
-
-        Args:
-            name: The name of the loader
-
-        Returns:
-            The loader with the given name
-
-        Raises:
-            KeyError: If no loader with the given name is registered
-        """
+        """Get a loader instance by name."""
         if name not in self.loaders:
-            raise KeyError(f"No loader with name '{name}' is registered")
-
+            raise KeyError(f"No loader instance with name '{name}' is registered")
         return self.loaders[name]
 
     def get_pipeline(self, name: str) -> Pipeline:
-        """
-        Get a pipeline by name.
-
-        Args:
-            name: The name of the pipeline
-
-        Returns:
-            The pipeline with the given name
-
-        Raises:
-            KeyError: If no pipeline with the given name is registered
-        """
+        """Get a pipeline instance by name."""
         if name not in self.pipelines:
-            raise KeyError(f"No pipeline with name '{name}' is registered")
-
+            raise KeyError(f"No pipeline instance with name '{name}' is registered")
         return self.pipelines[name]
 
     def get_all_extractors(self) -> dict[str, BaseExtractor]:
-        """
-        Get all registered extractors.
-
-        Returns:
-            A dictionary mapping extractor names to extractors
-        """
+        """Get all registered extractor instances."""
         return self.extractors.copy()
 
     def get_all_transformers(self) -> dict[str, BaseTransformer]:
-        """
-        Get all registered transformers.
-
-        Returns:
-            A dictionary mapping transformer names to transformers
-        """
+        """Get all registered transformer instances."""
         return self.transformers.copy()
 
     def get_all_loaders(self) -> dict[str, BaseLoader]:
-        """
-        Get all registered loaders.
-
-        Returns:
-            A dictionary mapping loader names to loaders
-        """
+        """Get all registered loader instances."""
         return self.loaders.copy()
 
     def get_all_pipelines(self) -> dict[str, Pipeline]:
-        """
-        Get all registered pipelines.
-
-        Returns:
-            A dictionary mapping pipeline names to pipelines
-        """
+        """Get all registered pipeline instances."""
         return self.pipelines.copy()
 
+    # --- Clearing Methods ---
+
     def clear(self) -> None:
-        """Clear all registered components."""
+        """Clear all registered components (types and instances) and pipelines."""
         self.extractors.clear()
         self.transformers.clear()
         self.loaders.clear()
         self.pipelines.clear()
+        self.extractor_types.clear()
+        self.transformer_types.clear()
+        self.loader_types.clear()
+        logger.info("Registry cleared.")
 
-    def reload_extractors(
-        self, package_path: str = "workflows/extractors", config_dict: dict[str, dict[str, Any]] | None = None
-    ) -> None:
+    # --- Reload Methods (Modified to register types only) ---
+
+    def reload_extractors(self, package_path: str = "src/data_warehouse/extractors") -> None:
         """
-        Reload extractors from the extractors package.
-
-        Args:
-            package_path: The path to the extractors package
-            config_dict: A dictionary mapping extractor names to configurations
+        Discover and register extractor *types* (classes) from a package.
+        Does not instantiate components.
         """
-        # Clear existing extractors
-        self.extractors.clear()
+        logger.info(f"Reloading extractor types from {package_path}...")
+        self.extractor_types.clear()  # Clear previous types
+        try:
+            discovered_classes = discover_extractors(package_path)
+            logger.info(f"Discovered {len(discovered_classes)} extractor classes.")
+            for component_class in discovered_classes:
+                try:
+                    self.register_extractor_type(component_class)
+                    logger.debug(f"Registered extractor type: {component_class.__name__}")
+                except Exception as e:
+                    logger.error(f"Failed to register extractor type {component_class.__name__}: {e}")
 
-        # Discover new extractors
-        extractor_classes = discover_extractors(package_path)
+        except ConfigurationError as e:
+            logger.error(f"Error discovering extractor types: {e}")
+        except Exception:
+            logger.exception(f"Unexpected error during extractor type reload from {package_path}")
 
-        # Instantiate and register new extractors
-        for extractor_class in extractor_classes:
-            default_name = extractor_class.__name__
-
-            if config_dict and default_name in config_dict:
-                config = config_dict[default_name]
-                name = config.get("name", default_name)
-                extractor = extractor_class(name, config)
-            else:
-                extractor = extractor_class(default_name)
-
-            self.register_extractor(extractor)
-
-    def reload_transformers(
-        self, package_path: str = "workflows/transformers", config_dict: dict[str, dict[str, Any]] | None = None
-    ) -> None:
+    def reload_transformers(self, package_path: str = "src/data_warehouse/transformers") -> None:
         """
-        Reload transformers from the transformers package.
-
-        Args:
-            package_path: The path to the transformers package
-            config_dict: A dictionary mapping transformer names to configurations
+        Discover and register transformer *types* (classes) from a package.
+        Does not instantiate components.
         """
-        # Clear existing transformers
-        self.transformers.clear()
+        logger.info(f"Reloading transformer types from {package_path}...")
+        self.transformer_types.clear()  # Clear previous types
+        try:
+            discovered_classes = discover_transformers(package_path)
+            logger.info(f"Discovered {len(discovered_classes)} transformer classes.")
+            for component_class in discovered_classes:
+                try:
+                    self.register_transformer_type(component_class)
+                    logger.debug(f"Registered transformer type: {component_class.__name__}")
+                except Exception as e:
+                    logger.error(f"Failed to register transformer type {component_class.__name__}: {e}")
 
-        # Discover new transformers
-        transformer_classes = discover_transformers(package_path)
+        except ConfigurationError as e:
+            logger.error(f"Error discovering transformer types: {e}")
+        except Exception:
+            logger.exception(f"Unexpected error during transformer type reload from {package_path}")
 
-        # Instantiate and register new transformers
-        for transformer_class in transformer_classes:
-            default_name = transformer_class.__name__
-
-            if config_dict and default_name in config_dict:
-                config = config_dict[default_name]
-                name = config.get("name", default_name)
-                transformer = transformer_class(name, config)
-            else:
-                transformer = transformer_class(default_name)
-
-            self.register_transformer(transformer)
-
-    def reload_loaders(
-        self, package_path: str = "workflows/loaders", config_dict: dict[str, dict[str, Any]] | None = None
-    ) -> None:
+    def reload_loaders(self, package_path: str = "src/data_warehouse/loaders") -> None:
         """
-        Reload loaders from the loaders package.
-
-        Args:
-            package_path: The path to the loaders package
-            config_dict: A dictionary mapping loader names to configurations
+        Discover and register loader *types* (classes) from a package.
+        Does not instantiate components.
         """
-        # Clear existing loaders
-        self.loaders.clear()
+        logger.info(f"Reloading loader types from {package_path}...")
+        self.loader_types.clear()  # Clear previous types
+        try:
+            discovered_classes = discover_loaders(package_path)
+            logger.info(f"Discovered {len(discovered_classes)} loader classes.")
+            for component_class in discovered_classes:
+                try:
+                    self.register_loader_type(component_class)
+                    logger.debug(f"Registered loader type: {component_class.__name__}")
+                except Exception as e:
+                    logger.error(f"Failed to register loader type {component_class.__name__}: {e}")
 
-        # Discover new loaders
-        loader_classes = discover_loaders(package_path)
+        except ConfigurationError as e:
+            logger.error(f"Error discovering loader types: {e}")
+        except Exception:
+            logger.exception(f"Unexpected error during loader type reload from {package_path}")
 
-        # Instantiate and register new loaders
-        for loader_class in loader_classes:
-            default_name = loader_class.__name__
-
-            if config_dict and default_name in config_dict:
-                config = config_dict[default_name]
-                name = config.get("name", default_name)
-                loader = loader_class(name, config)
-            else:
-                loader = loader_class(default_name)
-
-            self.register_loader(loader)
-
-    def reload_all(
+    def reload_all_component_types(
         self,
-        extractors_path: str = "workflows/extractors",
-        transformers_path: str = "workflows/transformers",
-        loaders_path: str = "workflows/loaders",
-        config: dict[str, dict[str, dict[str, Any]]] | None = None,
+        extractors_path: str = "src/data_warehouse/extractors",
+        transformers_path: str = "src/data_warehouse/transformers",
+        loaders_path: str = "src/data_warehouse/loaders",
     ) -> None:
-        """
-        Reload all components from their respective packages.
-
-        Args:
-            extractors_path: The path to the extractors package
-            transformers_path: The path to the transformers package
-            loaders_path: The path to the loaders package
-            config: A dictionary containing configurations for all component types
-        """
-        # Clear all components
-        self.clear()
-
-        # Reload all components
-        extractor_config = config.get("extractors", {}) if config else {}
-        transformer_config = config.get("transformers", {}) if config else {}
-        loader_config = config.get("loaders", {}) if config else {}
-
-        self.reload_extractors(extractors_path, extractor_config)
-        self.reload_transformers(transformers_path, transformer_config)
-        self.reload_loaders(loaders_path, loader_config)
+        """Reload all component types."""
+        self.reload_extractors(extractors_path)
+        self.reload_transformers(transformers_path)
+        self.reload_loaders(loaders_path)

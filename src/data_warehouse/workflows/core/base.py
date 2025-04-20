@@ -507,37 +507,37 @@ class BaseWorkflow(ABC):
         self.logger = logger.bind(workflow=config.name)
 
     @abstractmethod
-    async def extract(self, context: OpExecutionContext) -> dict[str, Any]:
+    async def extract(self, op_context: OpExecutionContext) -> dict[str, Any]:
         """Extract data from source."""
         pass
 
     @abstractmethod
-    async def transform(self, context: OpExecutionContext, data: dict[str, Any]) -> dict[str, Any]:
+    async def transform(self, op_context: OpExecutionContext, data: dict[str, Any]) -> dict[str, Any]:
         """Transform extracted data."""
         pass
 
     @abstractmethod
-    async def load(self, context: OpExecutionContext, data: dict[str, Any]) -> None:
+    async def load(self, op_context: OpExecutionContext, data: dict[str, Any]) -> None:
         """Load transformed data into warehouse."""
         pass
 
     @asset
-    async def run(self, context: OpExecutionContext) -> None:
+    async def run(self, op_context: OpExecutionContext) -> None:
         """Execute the complete workflow."""
         try:
             self.logger.info(f"Starting workflow: {self.config.name}")
 
             # Extract
-            raw_data = await self.extract(context)
-            context.log.info(f"Extracted data: {len(raw_data)} records")
+            raw_data = await self.extract(op_context)
+            op_context.log.info(f"Extracted data: {len(raw_data)} records")
 
             # Transform
-            transformed_data = await self.transform(context, raw_data)
-            context.log.info(f"Transformed data: {len(transformed_data)} records")
+            transformed_data = await self.transform(op_context, raw_data)
+            op_context.log.info(f"Transformed data: {len(transformed_data)} records")
 
             # Load
-            await self.load(context, transformed_data)
-            context.log.info("Data loaded successfully")
+            await self.load(op_context, transformed_data)
+            op_context.log.info("Data loaded successfully")
 
             self.logger.info(f"Workflow completed: {self.config.name}")
         except Exception as e:

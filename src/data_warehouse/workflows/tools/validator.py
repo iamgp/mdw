@@ -65,9 +65,11 @@ class WorkflowValidator:
         Raises:
             ValidationError: If the extractor is invalid
         """
-        # Extractors must have a source
-        if not hasattr(extractor, "source") or not extractor.source:
-            raise ValidationError(f"Extractor {extractor.name} must have a source")
+        # Removed generic check for 'source' attribute.
+        # Specific source validation should be handled by the extractor's
+        # own validate_source() method if needed.
+        # if not hasattr(extractor, "source") or not extractor.source:
+        #     raise ValidationError(f"Extractor {extractor.name} must have a source")
 
         # Validate extract method existence
         if not hasattr(extractor, "extract") or not callable(extractor.extract):

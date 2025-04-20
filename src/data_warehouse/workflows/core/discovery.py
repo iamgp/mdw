@@ -107,7 +107,7 @@ def discover_component_classes(module: Any, base_class: type[T], exclude_base: b
     return component_classes
 
 
-def discover_extractors(package_path: str = "workflows/extractors") -> list[type[BaseExtractor]]:
+def discover_extractors(package_path: str = "src/data_warehouse/extractors") -> list[type[BaseExtractor]]:
     """
     Discover all extractor classes in the extractors package.
 
@@ -126,7 +126,7 @@ def discover_extractors(package_path: str = "workflows/extractors") -> list[type
     return extractors
 
 
-def discover_transformers(package_path: str = "workflows/transformers") -> list[type[BaseTransformer]]:
+def discover_transformers(package_path: str = "src/data_warehouse/transformers") -> list[type[BaseTransformer]]:
     """
     Discover all transformer classes in the transformers package.
 
@@ -145,7 +145,7 @@ def discover_transformers(package_path: str = "workflows/transformers") -> list[
     return transformers
 
 
-def discover_loaders(package_path: str = "workflows/loaders") -> list[type[BaseLoader]]:
+def discover_loaders(package_path: str = "src/data_warehouse/loaders") -> list[type[BaseLoader]]:
     """
     Discover all loader classes in the loaders package.
 

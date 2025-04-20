@@ -1,0 +1,22 @@
+---
+# Example configuration template for NightscoutExtractor
+
+# List of extractor definitions (this template defines one)
+extractors:
+  - name: nightscout_glucose_hourly # Unique name for this extractor instance
+    type: NightscoutExtractor # The class name to instantiate
+    config:
+      # Nightscout-specific configuration
+      base_url: ${NIGHTSCOUT_BASE_URL} # Use environment variable or provide directly
+      api_secret: ${NIGHTSCOUT_API_SECRET} # Use environment variable or provide directly
+      lookback_hours: 1 # Example: Fetch last 1 hour
+
+
+      # Optional base Sling configuration (merged with Nightscout-specific settings)
+      # sling_config:
+      #   timeout: 60 # Example: Set a custom timeout for Sling API calls
+      #   retries: 3  # Example: Configure retries within Sling
+# --- Optional sections for defining transformers, loaders, and pipelines ---
+# transformers: []
+# loaders: []
+# pipelines: []

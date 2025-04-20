@@ -8,29 +8,23 @@ from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTr
 from data_warehouse.workflows.core.discovery import (
     discover_extractors,
     discover_loaders,
-    discover_pipelines,
     discover_transformers,
 )
 from data_warehouse.workflows.core.exceptions import (
     ConfigurationError,
-    DiscoveryError,
-    DocsGeneratorError,
     ExtractorError,
     LoaderError,
     PipelineError,
-    RegistryError,
     TransformerError,
     ValidationError,
-    WatcherError,
 )
 from data_warehouse.workflows.core.registry import Registry
 from data_warehouse.workflows.core.workflow_manager import WorkflowManager
 from data_warehouse.workflows.integrations.dagster_integration import (
-    ExtractorToDagsterOp,
-    LoaderToDagsterOp,
-    PipelineToDagsterJob,
-    TransformerToDagsterOp,
-    create_dagster_repository,
+    extractor_to_dagster_op,
+    loader_to_dagster_op,
+    pipeline_to_dagster_job,
+    transformer_to_dagster_op,
 )
 from data_warehouse.workflows.tools.cli import cli
 from data_warehouse.workflows.tools.docs_generator import DocsGenerator
@@ -51,7 +45,6 @@ __all__ = [
     # Discovery (from core.discovery)
     "discover_extractors",
     "discover_loaders",
-    "discover_pipelines",
     "discover_transformers",
     # Templates (from tools.templates)
     "TemplateGenerator",
@@ -59,11 +52,10 @@ __all__ = [
     # Validator (from tools.validator)
     "WorkflowValidator",
     # Dagster Integration (from integrations.dagster_integration)
-    "ExtractorToDagsterOp",
-    "TransformerToDagsterOp",
-    "LoaderToDagsterOp",
-    "PipelineToDagsterJob",
-    "create_dagster_repository",
+    "extractor_to_dagster_op",
+    "transformer_to_dagster_op",
+    "loader_to_dagster_op",
+    "pipeline_to_dagster_job",
     # Watcher (from tools.watcher)
     "WorkflowWatcher",
     "WorkflowFileHandler",
@@ -78,8 +70,4 @@ __all__ = [
     "TransformerError",
     "LoaderError",
     "PipelineError",
-    "RegistryError",
-    "DiscoveryError",
-    "WatcherError",
-    "DocsGeneratorError",
 ]

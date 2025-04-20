@@ -6,6 +6,7 @@ and discovery systems to manage workflow components and pipelines.
 """
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from data_warehouse.workflows.core.base import BaseExtractor, BaseLoader, BaseTransformer, Pipeline
@@ -38,24 +39,24 @@ class WorkflowManager:
 
     def discover_components(
         self,
-        extractors_path: str = "workflows/extractors",
-        transformers_path: str = "workflows/transformers",
-        loaders_path: str = "workflows/loaders",
-        config_dict: dict[str, dict[str, Any]] | None = None,
+        extractors_path: str = "src/data_warehouse/extractors",
+        transformers_path: str = "src/data_warehouse/transformers",
+        loaders_path: str = "src/data_warehouse/loaders",
+        # config_dict is no longer used here, discovery only finds types
     ) -> None:
         """
-        Discover and register all workflow components.
+        Discover component *types* (classes) and register them with the registry.
+        Does not instantiate components.
 
         Args:
             extractors_path: The path to the extractors package
             transformers_path: The path to the transformers package
             loaders_path: The path to the loaders package
-            config_dict: Configuration for components
         """
-        # Use the registry's reload methods to discover and register components
-        self.registry.reload_extractors(extractors_path, config_dict)
-        self.registry.reload_transformers(transformers_path, config_dict)
-        self.registry.reload_loaders(loaders_path, config_dict)
+        # Use the registry's reload methods to discover and register component types
+        self.registry.reload_extractors(extractors_path)
+        self.registry.reload_transformers(transformers_path)
+        self.registry.reload_loaders(loaders_path)
 
     def register_extractor(self, extractor: BaseExtractor) -> None:
         """
@@ -107,97 +108,184 @@ class WorkflowManager:
 
     def create_pipeline_from_template(self, template_path: str) -> Pipeline:
         """
-        Create a pipeline from a template file.
+        Create and register components and a pipeline from a template file.
+
+        This method parses the template, instantiates the defined components
+        (extractors, transformers, loaders) using their configurations from the
+        template, registers these instances, and finally creates and registers
+        the pipeline itself.
 
         Args:
             template_path: The path to the template file
 
         Returns:
-            The created pipeline
+            The created and registered pipeline instance
 
         Raises:
-            ConfigurationError: If the template cannot be loaded or parsed
-            ValidationError: If the template is invalid
+            ConfigurationError: If the template cannot be loaded/parsed or references unknown types
+            ValidationError: If the template structure is invalid or components fail validation
         """
-        # Parse and validate the template
+        # Parse and validate the template structure
         template = self.template_parser.parse_and_validate(template_path)
-
-        # Resolve references in the template
+        # Note: Reference resolution might need adjustment depending on its implementation
         resolved_template = self.template_parser.resolve_references(template)
 
-        # Extract pipeline information
+        # 1. Instantiate and register components defined in the template
+        self._instantiate_components_from_template(
+            resolved_template, "extractors", self.registry.get_extractor_type, self.registry.register_extractor
+        )
+        self._instantiate_components_from_template(
+            resolved_template, "transformers", self.registry.get_transformer_type, self.registry.register_transformer
+        )
+        self._instantiate_components_from_template(
+            resolved_template, "loaders", self.registry.get_loader_type, self.registry.register_loader
+        )
+
+        # 2. Create and register the pipeline(s)
         if not resolved_template.get("pipelines"):
             raise ValidationError("No pipelines defined in the template")
 
-        pipeline_data = resolved_template["pipelines"][0]  # Using the first pipeline for simplicity
+        # Assuming only one pipeline per template for now
+        pipeline_data = resolved_template["pipelines"][0]
 
-        # Extract component configurations
-        extractor_data = pipeline_data.get("extractor")
-        transformer_data_list = pipeline_data.get("transformers", [])
-        loader_data = pipeline_data.get("loader")
+        pipeline_name = pipeline_data.get("name", "default_pipeline")
+        pipeline_config = pipeline_data.get("config", {})
+        description = resolved_template.get("description", f"Pipeline '{pipeline_name}' loaded from template")
 
-        if not extractor_data:
-            raise ValidationError("No extractor defined in the pipeline")
+        # Get referenced component *instances*
+        extractor_ref_obj = pipeline_data.get("extractor")
+        if not extractor_ref_obj:
+            raise ValidationError(f"Pipeline '{pipeline_name}' must define an 'extractor'")
 
-        # Get or create components
-        extractor_name = extractor_data.get("name")
-        if not extractor_name:
-            raise ValidationError("Extractor name is missing")
+        # --- Get component NAME for registry lookup (Handles resolved dicts) ---
+        if isinstance(extractor_ref_obj, dict):
+            extractor_name_to_lookup = extractor_ref_obj.get("name")
+            if not extractor_name_to_lookup:
+                raise ValidationError("Resolved extractor reference in pipeline is missing a 'name'.")
+        elif isinstance(extractor_ref_obj, str):
+            extractor_name_to_lookup = extractor_ref_obj  # If resolve_references didn't resolve it
+        else:
+            raise ValidationError(f"Invalid format for extractor reference in pipeline: {extractor_ref_obj}")
+        # --- End Get Name ---
 
-        # Try to find the extractor in the registry or create a new one
         try:
-            extractor = self.registry.get_extractor(extractor_name)
+            # Use the extracted name for lookup
+            extractor_instance = self.registry.get_extractor(extractor_name_to_lookup)
         except KeyError:
-            raise ConfigurationError(f"Extractor '{extractor_name}' not found in registry") from None
+            raise ConfigurationError(
+                f"Extractor instance '{extractor_name_to_lookup}' needed by pipeline '{pipeline_name}' not found. Was it defined and instantiated correctly from the template?"
+            ) from None
 
-        # Process transformers
-        transformers = []
-        for transformer_data in transformer_data_list:
-            transformer_name = transformer_data.get("name")
-            if not transformer_name:
-                raise ValidationError("Transformer name is missing")
-
+        transformer_instances = []
+        for transformer_ref_obj in pipeline_data.get("transformers", []):
+            # --- Get component NAME for registry lookup ---
+            if isinstance(transformer_ref_obj, dict):
+                transformer_name_to_lookup = transformer_ref_obj.get("name")
+                if not transformer_name_to_lookup:
+                    raise ValidationError("Resolved transformer reference in pipeline is missing a 'name'.")
+            elif isinstance(transformer_ref_obj, str):
+                transformer_name_to_lookup = transformer_ref_obj
+            else:
+                raise ValidationError(f"Invalid format for transformer reference in pipeline: {transformer_ref_obj}")
+            # --- End Get Name ---
             try:
-                transformer = self.registry.get_transformer(transformer_name)
-                transformers.append(transformer)
+                transformer_instance = self.registry.get_transformer(transformer_name_to_lookup)
+                transformer_instances.append(transformer_instance)
             except KeyError:
-                raise ConfigurationError(f"Transformer '{transformer_name}' not found in registry") from None
+                raise ConfigurationError(
+                    f"Transformer instance '{transformer_name_to_lookup}' needed by pipeline '{pipeline_name}' not found. Was it defined and instantiated correctly from the template?"
+                ) from None
 
-        # Process loader (if defined)
-        loader = None
-        if loader_data:
-            loader_name = loader_data.get("name")
-            if not loader_name:
-                raise ValidationError("Loader name is missing")
-
+        loader_instance = None
+        loader_ref_obj = pipeline_data.get("loader")
+        if loader_ref_obj:
+            # --- Get component NAME for registry lookup ---
+            if isinstance(loader_ref_obj, dict):
+                loader_name_to_lookup = loader_ref_obj.get("name")
+                if not loader_name_to_lookup:
+                    raise ValidationError("Resolved loader reference in pipeline is missing a 'name'.")
+            elif isinstance(loader_ref_obj, str):
+                loader_name_to_lookup = loader_ref_obj
+            else:
+                raise ValidationError(f"Invalid format for loader reference in pipeline: {loader_ref_obj}")
+            # --- End Get Name ---
             try:
-                loader = self.registry.get_loader(loader_name)
+                loader_instance = self.registry.get_loader(loader_name_to_lookup)
             except KeyError:
-                raise ConfigurationError(f"Loader '{loader_name}' not found in registry") from None
+                raise ConfigurationError(
+                    f"Loader instance '{loader_name_to_lookup}' needed by pipeline '{pipeline_name}' not found. Was it defined and instantiated correctly from the template?"
+                ) from None
 
-        # Create and validate the pipeline
+        # Create the pipeline instance
         pipeline = Pipeline(
-            name=pipeline_data.get("name", "pipeline"),
-            extractor=extractor,
-            transformers=transformers,
-            loader=loader,
-            config=pipeline_data.get("config", {}),
+            name=pipeline_name,
+            extractor=extractor_instance,
+            transformers=transformer_instances,
+            loader=loader_instance,
+            config=pipeline_config,
+            # Consider adding description/metadata from template to Pipeline class
         )
 
-        # Validate the pipeline
+        # Validate and register the pipeline instance
         self.validator.validate_pipeline(pipeline)
+        self.register_pipeline(pipeline)
+        logger.info(f"Successfully created and registered pipeline: '{pipeline.name}'")
 
         return pipeline
 
+    def _instantiate_components_from_template(
+        self,
+        template: dict,
+        component_key: str,
+        type_getter: Callable[[str], type[Any]],
+        instance_register: Callable[[Any], None],
+    ) -> None:
+        """Helper to instantiate and register components of a specific type from the template."""
+        # Using Any for simplicity as the helper handles different Base types.
+        for component_data in template.get(component_key, []):
+            comp_name = component_data.get("name")
+            comp_type_name = component_data.get("type")
+            comp_config = component_data.get("config", {})
+
+            if not comp_name or not comp_type_name:
+                raise ValidationError(
+                    f"Component definition in '{component_key}' section is missing 'name' or 'type'. Data: {component_data}"
+                )
+
+            try:
+                # Get the component class (Type) from the registry
+                component_class = type_getter(comp_type_name)
+            except KeyError:
+                raise ConfigurationError(
+                    f"Component type '{comp_type_name}' (for name '{comp_name}') not found in registry. Ensure it's discoverable."
+                ) from None
+
+            try:
+                # Instantiate the component
+                instance = component_class(name=comp_name, config=comp_config)
+                # Register the instance
+                logger.debug(f"Inside _instantiate_components_from_template: component_key = '{component_key}'")
+                logger.debug(
+                    f"Before registering '{comp_name}', registry dict keys: {list(getattr(self.registry, component_key).keys())}"
+                )
+                instance_register(instance)
+                logger.debug(
+                    f"After registering '{comp_name}', registry dict keys: {list(getattr(self.registry, component_key).keys())}"
+                )
+                logger.debug(f"Instantiated and registered {component_key[:-1]}: {comp_name} (Type: {comp_type_name})")
+            except Exception as e:
+                logger.error(
+                    f"Failed to instantiate/register {component_key[:-1]} '{comp_name}' (Type: {comp_type_name}): {e}",
+                    exc_info=True,
+                )
+                # Decide if this should halt processing or just log
+                raise ConfigurationError(f"Failed to instantiate {component_key[:-1]} '{comp_name}': {e}") from e
+
     def validate_workflow(self) -> bool:
         """
-        Validate the entire workflow.
-
-        Returns:
-            True if the workflow is valid
-
-        Raises:
-            ValidationError: If the workflow is invalid
+        Validate the entire workflow (registered instances).
+        Note: This now only validates registered *instances*.
+        Validation of types or templates happens separately.
         """
         return self.validator.validate_workflow(
             self.registry.get_all_extractors(),
@@ -224,10 +312,15 @@ class WorkflowManager:
 
     def reload_components(self) -> None:
         """
-        Reload all components from their respective directories.
-        This is useful for hot-reloading when files change.
+        Reload all component *types* from their respective directories.
+        This is useful for hot-reloading when component class definitions change.
+        Does NOT reload instances or pipelines defined in templates.
         """
-        self.discover_components()
+        self.discover_components(
+            extractors_path="src/data_warehouse/extractors",
+            transformers_path="src/data_warehouse/transformers",
+            loaders_path="src/data_warehouse/loaders",
+        )
 
     def create_template_from_pipeline(self, pipeline_name: str, output_path: str, format: str = "yaml") -> None:
         """
@@ -387,6 +480,24 @@ class WorkflowManager:
             A dictionary mapping pipeline names to pipelines
         """
         return self.registry.get_all_pipelines()
+
+    def get_extractor_type(self, class_name: str) -> type[BaseExtractor]:
+        return self.registry.get_extractor_type(class_name)
+
+    def get_transformer_type(self, class_name: str) -> type[BaseTransformer]:
+        return self.registry.get_transformer_type(class_name)
+
+    def get_loader_type(self, class_name: str) -> type[BaseLoader]:
+        return self.registry.get_loader_type(class_name)
+
+    def get_all_extractor_types(self) -> dict[str, type[BaseExtractor]]:
+        return self.registry.get_all_extractor_types()
+
+    def get_all_transformer_types(self) -> dict[str, type[BaseTransformer]]:
+        return self.registry.get_all_transformer_types()
+
+    def get_all_loader_types(self) -> dict[str, type[BaseLoader]]:
+        return self.registry.get_all_loader_types()
 
     def clear_registry(self) -> None:
         """Clear all registered components from the registry."""

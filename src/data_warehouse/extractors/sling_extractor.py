@@ -10,7 +10,6 @@ from datetime import datetime
 from typing import Any
 
 from sling import Sling
-from sling.exceptions import SlingClientError, SlingConnectionError
 
 from data_warehouse.workflows.core.base import BaseExtractor, MetadataType
 from data_warehouse.workflows.core.exceptions import ExtractorError, ValidationError
@@ -70,9 +69,6 @@ class SlingExtractor(BaseExtractor[list[dict[str, Any]]]):
             self.last_run_time = datetime.now()
             logger.info(f"Sling extraction for '{self.name}' completed successfully. {len(records)} records extracted.")
             return records
-        except (SlingClientError, SlingConnectionError) as e:
-            logger.error(f"Sling extraction failed for '{self.name}': {e}", exc_info=True)
-            raise ExtractorError(f"Sling extraction failed: {e}") from e
         except Exception as e:
             logger.error(
                 f"An unexpected error occurred during Sling extraction for '{self.name}': {e}",
